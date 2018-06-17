@@ -16,3 +16,6 @@ Icebear reports are created in code, there is no designer. A first sight his sou
 Features
 - 7 available sections: reportheader, pageheader, groupHeader, detailsection, groupfooter, pagefooter and reportfooter
 - Unlimited grouping with totals in the groupfooter section : Sum, Count, Min, Max, Average
+- Objects on a report: text, image, line, rectangle, subreport and barcode
+
+Give it a try. You'll be surprised how easy and fast it is to create a report in code. Even more complex ones such as an invoice.
