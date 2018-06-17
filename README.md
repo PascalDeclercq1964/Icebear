@@ -13,3 +13,6 @@ Icebear reports are created in code, there is no designer. A first sight his sou
 
     report.GeneratePDF($"c:\\temp\\Report {DateTime.Now:yyyyMMddhhmmss}.pdf");
     
+Features
+- 7 available sections: reportheader, pageheader, groupHeader, detailsection, groupfooter, pagefooter and reportfooter
+- Unlimited grouping with totals in the groupfooter section : Sum, Count, Min, Max, Average
