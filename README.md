@@ -1,5 +1,5 @@
 # Icebear
-Icebear reporting is a .net library to create reports and generate them as a PDF or send to the printer
+Icebear reports is a .net library to create reports and generate them as a PDF or send to the printer
 
 Icebear reports are created in code, there is no designer. A first sight his sounds weird (no designer?) but take look at this example report, with a minimum if code you get a basic report
 
@@ -19,3 +19,6 @@ Features
 - Objects on a report: text, image, line, rectangle, subreport and barcode
 
 Give it a try. You'll be surprised how easy and fast it is to create a report in code. Even more complex ones such as an invoice.
+
+IMPORTANT NOTE: Icebear reports is in a very early development faze. Please feel free to try and test it. We do not recommend to use it already in production.
+All comments are appreciated.
