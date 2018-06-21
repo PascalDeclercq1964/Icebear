@@ -128,10 +128,10 @@ namespace IceBear
 
         public void GeneratePDF(string FileName, bool OpenWhenDone = true)
         {
-            if (System.Diagnostics.Debugger.IsAttached)
-            {
-                return;
-            }
+            //if (System.Diagnostics.Debugger.IsAttached)
+            //{
+            //    return;
+            //}
 
             generateGenericReport();
 
@@ -152,8 +152,8 @@ namespace IceBear
 
             PrintDocument printDocument = new PrintDocument();
             printDocument.PrinterSettings.PrinterName = PrinterName;
-            printDocument.DefaultPageSettings.PrinterResolution.X = 72;
-            printDocument.DefaultPageSettings.PrinterResolution.Y = 72;
+            //printDocument.DefaultPageSettings.PrinterResolution.X = 72;
+            //printDocument.DefaultPageSettings.PrinterResolution.Y = 72;
             //printDocument.DefaultPageSettings.PrinterResolution.Kind = PrinterResolutionKind.High;
             //printDocument.DefaultPageSettings.PaperSize = printDocument.DefaultPageSettings.PaperSize = new PaperSize(SelectedPageType.ToString(), Convert.ToInt32(PageWidth), Convert.ToInt32(PageLength));
 
@@ -594,7 +594,10 @@ namespace IceBear
 
             XTextFormatter tf = new XTextFormatter(gfx);
             tf.Alignment = (XParagraphAlignment)Alignment;
-            tf.DrawString(valueToRender, (XFont)style.Font, (XBrush)style.Brush, new XRect(X, Y, W, H));
+
+            Font font = new Font(style.Font.Name, style.Font.SizeInPoints, GraphicsUnit.World);
+
+            tf.DrawString(valueToRender, (XFont)font, (XBrush)style.Brush, new XRect(X, Y, W, H));
 
         }
         public void DrawLine(Pen pen, double X, double Y, double W, double H)
@@ -774,7 +777,7 @@ namespace IceBear
             {
                 return new Style()
                 {
-                    Font = new Font("Verdana", 10, FontStyle.Regular, GraphicsUnit.World),
+                    Font = new Font("Verdana", 16, FontStyle.Regular, GraphicsUnit.Point),
                     Brush = Brushes.Black,
                     Pen = new Pen(Color.Black, 0.5f),
                     BrushForRectangles = Brushes.PaleTurquoise

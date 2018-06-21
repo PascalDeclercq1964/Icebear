@@ -224,7 +224,7 @@ namespace IcebearDemo
             report.DataSource = products.OrderBy(p => p.ProductID);
             report.ShowGrid = true;
 
-            report.AddField("ProductID", 60, X: 15, HeaderLabel: "Product ID",);
+            report.AddField("ProductID", 60, X: 15, HeaderLabel: "Product ID");
             report.AddField("ProductName", 150, HeaderLabel: "Description");
             report.AddField("UnitPrice", 50, HeaderLabel: "Unit price", Alignment: Alignment.Right, Mask: "0.00");
             report.AddField("UnitsInStock", 50, HeaderLabel: "Stock qty", Alignment: Alignment.Right);
@@ -331,13 +331,13 @@ namespace IcebearDemo
             Report report = new Report();
 
             Style defaultStyle = report.DefaultStyle.Clone();
-            defaultStyle.Font = new Font("Calibri", 11, GraphicsUnit.World);
+            defaultStyle.Font = new Font("Calibri", 11, GraphicsUnit.Point);
             report.DefaultStyle = defaultStyle;
 
             Style titleStyle = defaultStyle.Clone();
-            titleStyle.Font=new Font("Calibri", 14, FontStyle.Bold, GraphicsUnit.World);
+            titleStyle.Font=new Font("Calibri", 20, FontStyle.Bold, GraphicsUnit.Point);
             Style headerStyle = defaultStyle.Clone();
-            headerStyle.Font= new Font("Calibri", 11, FontStyle.Bold, GraphicsUnit.World);
+            headerStyle.Font= new Font("Calibri", 11, FontStyle.Bold, GraphicsUnit.Point);
 
             report.PageHeader = new ReportSection()
             {
