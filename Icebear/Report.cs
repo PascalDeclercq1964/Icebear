@@ -126,6 +126,8 @@ namespace IceBear
 
         internal GenericReport genericReport;
 
+        const double fontSizeToHeight = 1.8f;
+
         public void GeneratePDF(string FileName, bool OpenWhenDone = true)
         {
             //if (System.Diagnostics.Debugger.IsAttached)
@@ -176,11 +178,21 @@ namespace IceBear
                 switch (item.reportObjectType)
                 {
                     case reportObjectTypes.Rectangle:
-                        //Pen penUsed=
-                        e.Graphics.DrawRectangle(item.pen, item.XPrint, item.YPrint, item.WPrint, item.HPrint);
+                        Pen penUsed = (Pen)item.pen.Clone();
+                        //penUsed.Brush = item.brush;
+                        if (item.brush != null)
+                            e.Graphics.FillRectangle(item.brush, item.XPrint, item.YPrint, item.WPrint, item.HPrint);
+                        e.Graphics.DrawRectangle(penUsed, item.XPrint, item.YPrint, item.WPrint, item.HPrint);
                         break;
                     case reportObjectTypes.String:
-                        e.Graphics.DrawString(item.text, item.style.Font, item.style.Brush, new RectangleF(item.XPrint, item.YPrint, item.WPrint, item.HPrint));
+                        StringFormat sf = new StringFormat();
+                        if (item.alignment == Alignment.Left || item.alignment == Alignment.Justify)
+                            sf.Alignment = StringAlignment.Near;
+                        else if (item.alignment == Alignment.Center)
+                            sf.Alignment = StringAlignment.Center;
+                        else
+                            sf.Alignment = StringAlignment.Far;
+                        e.Graphics.DrawString(item.text, item.style.Font, item.style.Brush, new RectangleF(item.XPrint, item.YPrint, item.WPrint, item.HPrint), sf);
                         break;
                     case reportObjectTypes.Line:
                         e.Graphics.DrawLine(item.pen, item.XPrint, item.YPrint, item.XPrint+item.WPrint, item.YPrint+item.HPrint);
@@ -426,7 +438,7 @@ namespace IceBear
                 xNextPosition = 0;
 
             X = X ?? xNextPosition;
-            Height = Height ?? DefaultStyle.Font.Size;
+            Height = Height ?? DefaultStyle.Font.Size*fontSizeToHeight;
 
             if (HeaderLabel != null)
             {
@@ -438,7 +450,7 @@ namespace IceBear
                     this.SectionForAutoHeaderLabels = this.PageHeader;  //not sure if this is the best solution. The problem is that when a report is instantiated, the pageheader does not exist yet so the SectionForAutoHeaderLabels cannot be set to it yet as a default
                 }
 
-                this.SectionForAutoHeaderLabels.ReportObjects.Add(new ReportObjectLabel(HeaderLabel, X.Value, YTopForAutoAddedFieldsInHeader, Width: Width, Alignment: Alignment));
+                this.SectionForAutoHeaderLabels.ReportObjects.Add(new ReportObjectLabel(HeaderLabel, X.Value, YTopForAutoAddedFieldsInHeader, Width: Width, Heigth:Height, Alignment: Alignment));
             }
             this.DetailSection.ReportObjects.Add(new ReportObjectField() { FieldName = FieldName, XLeft = X.Value, XRight = X.Value + Width, YTop = 0, YBottom = Height.Value, Alignment = Alignment, Mask = Mask, ID = ID, CanGrow=true });
 
@@ -512,45 +524,45 @@ namespace IceBear
         void DrawImage(Image image, double X, double Y, double W, double H);
     }
 
-    public class RenderToPrinter : IRenderEngine
-    {
-        public RenderToPrinter(string PrinterName)
-        {
-            printDocument = new PrintDocument();
-            printDocument.PrintPage += PrintDocument_PrintPage;
-        }
+    //public class RenderToPrinter : IRenderEngine
+    //{
+    //    public RenderToPrinter(string PrinterName)
+    //    {
+    //        printDocument = new PrintDocument();
+    //        printDocument.PrintPage += PrintDocument_PrintPage;
+    //    }
 
-        private void PrintDocument_PrintPage(object sender, PrintPageEventArgs e)
-        {
-            throw new NotImplementedException();
-        }
+    //    private void PrintDocument_PrintPage(object sender, PrintPageEventArgs e)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
 
-        PrintDocument printDocument;
-        public void DrawImage(Image image, double X, double Y, double W, double H)
-        {
-            throw new NotImplementedException();
-        }
+    //    PrintDocument printDocument;
+    //    public void DrawImage(Image image, double X, double Y, double W, double H)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
 
-        public void DrawLine(Pen penUsed, double X, double Y, double W, double H)
-        {
-            throw new NotImplementedException();
-        }
+    //    public void DrawLine(Pen penUsed, double X, double Y, double W, double H)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
 
-        public void DrawRectangle(Pen pen, Brush brush, double X, double Y, double W, double H)
-        {
-            throw new NotImplementedException();
-        }
+    //    public void DrawRectangle(Pen pen, Brush brush, double X, double Y, double W, double H)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
 
-        public void DrawString(string valueToRender, Style style, double X, double Y, double W, double H, Alignment Alignment)
-        {
-            throw new NotImplementedException();
-        }
+    //    public void DrawString(string valueToRender, Style style, double X, double Y, double W, double H, Alignment Alignment)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
 
-        public void NewPage()
-        {
-            throw new NotImplementedException();
-        }
-    }
+    //    public void NewPage()
+    //    {
+    //        throw new NotImplementedException();
+    //    }
+    //}
 
     public class RenderToPDF : IRenderEngine
     {
@@ -595,8 +607,7 @@ namespace IceBear
             XTextFormatter tf = new XTextFormatter(gfx);
             tf.Alignment = (XParagraphAlignment)Alignment;
 
-            Font font = new Font(style.Font.Name, style.Font.SizeInPoints, GraphicsUnit.World);
-
+            Font font =  new Font(style.Font.FontFamily, style.Font.SizeInPoints, style.Font.Style, GraphicsUnit.World);
             tf.DrawString(valueToRender, (XFont)font, (XBrush)style.Brush, new XRect(X, Y, W, H));
 
         }
@@ -777,7 +788,7 @@ namespace IceBear
             {
                 return new Style()
                 {
-                    Font = new Font("Verdana", 16, FontStyle.Regular, GraphicsUnit.Point),
+                    Font = new Font("Verdana", 11, FontStyle.Regular, GraphicsUnit.Point),
                     Brush = Brushes.Black,
                     Pen = new Pen(Color.Black, 0.5f),
                     BrushForRectangles = Brushes.PaleTurquoise
@@ -867,6 +878,7 @@ namespace IceBear
             if (CanGrow)
             {
                 Graphics g= Graphics.FromHwnd(IntPtr.Zero);
+                g.PageUnit = GraphicsUnit.Point;
                 SizeF s=g.MeasureString(valueToRender, usedStyle.Font, Convert.ToInt32(XRight-XLeft));
 
 

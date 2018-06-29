@@ -177,13 +177,13 @@ namespace IcebearDemo
         {
             report = new Report();
             report.DataSource = customers.OrderBy(c => c.CompanyName);
-            report.SelectedOrientation = Report.Orientations.Landscape;
-            report.SelectedPageType = Report.PageSizes.A5;
+            //report.SelectedOrientation = Report.Orientations.Landscape;
+            //report.SelectedPageType = Report.PageSizes.A5;
 
             report.AddField("Id", 50, HeaderLabel:"ID");
-            report.AddField("CompanyName", 100, HeaderLabel:"Name");
-            report.AddField("Address", 100, HeaderLabel:"Address");
-            report.AddField("City", 100, HeaderLabel:"City");
+            report.AddField("CompanyName", 200, HeaderLabel:"Name");
+            report.AddField("Address", 200, HeaderLabel:"Address");
+            report.AddField("City", 200, HeaderLabel:"City");
 
         }
         void CustomerListPerCountry()
@@ -226,12 +226,12 @@ namespace IcebearDemo
 
             report.AddField("ProductID", 60, X: 15, HeaderLabel: "Product ID");
             report.AddField("ProductName", 150, HeaderLabel: "Description");
-            report.AddField("UnitPrice", 50, HeaderLabel: "Unit price", Alignment: Alignment.Right, Mask: "0.00");
-            report.AddField("UnitsInStock", 50, HeaderLabel: "Stock qty", Alignment: Alignment.Right);
-            report.AddField("UnitsOnOrder", 50, HeaderLabel: "On order qty", Alignment: Alignment.Right, Mask: "#");
-            report.AddField("ReorderLevel", 50, HeaderLabel: "Reorder lvl", Alignment: Alignment.Right, Mask: "#");
+            report.AddField("UnitPrice", 60, HeaderLabel: "Unit price", Alignment: Alignment.Right, Mask: "0.00");
+            report.AddField("UnitsInStock", 60, HeaderLabel: "Stock qty", Alignment: Alignment.Right);
+            report.AddField("UnitsOnOrder", 60, HeaderLabel: "On order qty", Alignment: Alignment.Right, Mask: "#");
+            report.AddField("ReorderLevel", 60, HeaderLabel: "Reorder lvl", Alignment: Alignment.Right, Mask: "#");
 
-            report.DetailSection.ReportObjects.Add(new ReportObjectImage() { ImageFileName = @"C:\Users\Pascal\Pictures\discontinued.png", XLeft = 0, YTop = 2, YBottom = 11, ID = "discontinued" });
+            report.DetailSection.ReportObjects.Add(new ReportObjectImage() { ImageFileName = @"C:\Users\Pascal\Pictures\discontinued.png", XLeft = 0, YTop = 0, YBottom = 11, ID = "discontinued" });
 
             report.DetailSection.IsVisible += DetailSection_IsVisible;
 
