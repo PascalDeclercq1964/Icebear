@@ -33,6 +33,7 @@
             this.button2 = new System.Windows.Forms.Button();
             this.panel1 = new System.Windows.Forms.Panel();
             this.printDialog1 = new System.Windows.Forms.PrintDialog();
+            this.checkBoxShowGrid = new System.Windows.Forms.CheckBox();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -69,6 +70,7 @@
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.checkBoxShowGrid);
             this.panel1.Controls.Add(this.button1);
             this.panel1.Controls.Add(this.button2);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Bottom;
@@ -81,6 +83,16 @@
             // 
             this.printDialog1.UseEXDialog = true;
             // 
+            // checkBoxShowGrid
+            // 
+            this.checkBoxShowGrid.AutoSize = true;
+            this.checkBoxShowGrid.Location = new System.Drawing.Point(13, 8);
+            this.checkBoxShowGrid.Name = "checkBoxShowGrid";
+            this.checkBoxShowGrid.Size = new System.Drawing.Size(142, 17);
+            this.checkBoxShowGrid.TabIndex = 3;
+            this.checkBoxShowGrid.Text = "Show grid on each page";
+            this.checkBoxShowGrid.UseVisualStyleBackColor = true;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -92,6 +104,7 @@
             this.Text = "Ice bear - simple reporting";
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.panel1.ResumeLayout(false);
+            this.panel1.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -103,6 +116,7 @@
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.PrintDialog printDialog1;
+        private System.Windows.Forms.CheckBox checkBoxShowGrid;
     }
 }
 

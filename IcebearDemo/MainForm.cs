@@ -102,7 +102,9 @@ namespace IcebearDemo
                 });
             }
 
+            orders[0].Comment = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.";
             orders[1].Comment = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+            orders[2].Comment = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.";
 
             dataTable = new DataTable();
             da.SelectCommand.CommandText = "select * from orderDetail";
@@ -170,6 +172,8 @@ namespace IcebearDemo
 
             reportDemo.h.Invoke();
 
+            report.ShowGrid = checkBoxShowGrid.Checked;
+
             report.GeneratePDF($"c:\\temp\\Report {DateTime.Now:yyyyMMddhhmmss}.pdf");
         }
 
@@ -181,10 +185,11 @@ namespace IcebearDemo
             //report.SelectedPageType = Report.PageSizes.A5;
 
             report.AddField("Id", 50, HeaderLabel:"ID");
-            report.AddField("CompanyName", 200, HeaderLabel:"Name");
+            report.AddField("CompanyName", 150, HeaderLabel:"Name");
             report.AddField("Address", 200, HeaderLabel:"Address");
             report.AddField("City", 200, HeaderLabel:"City");
-
+            
+           
         }
         void CustomerListPerCountry()
         {
@@ -222,9 +227,7 @@ namespace IcebearDemo
         {
             report = NewReport("ProductList");
             report.DataSource = products.OrderBy(p => p.ProductID);
-            report.ShowGrid = true;
-
-            report.AddField("ProductID", 60, X: 15, HeaderLabel: "Product ID");
+report.AddField("ProductID", 60, X: 15, HeaderLabel: "Product ID");
             report.AddField("ProductName", 150, HeaderLabel: "Description");
             report.AddField("UnitPrice", 60, HeaderLabel: "Unit price", Alignment: Alignment.Right, Mask: "0.00");
             report.AddField("UnitsInStock", 60, HeaderLabel: "Stock qty", Alignment: Alignment.Right);
@@ -271,8 +274,8 @@ namespace IcebearDemo
                 FooterSection = new ReportSection()
                 {
                     ReportObjects = new List<IReportObject>() {
-                        new ReportObjectField("Order.Comment", 0, 0, Width:report.PrintableAreaWidth, Heigth:40){CanGrow=true },
-                        new ReportObjectRectangle(){XLeft=0, XRight=report.PrintableAreaWidth, YTop=40, YBottom=80 },
+                        new ReportObjectField("Order.Comment", 0, 0, Width:report.PrintableAreaWidth, Heigth:1){CanGrow=true },
+                        new ReportObjectRectangle(){XLeft=0, XRight=report.PrintableAreaWidth, YTop=1, YBottom=80 },
                         new ReportObjectLabel("Total orderamount ex VAT", 300, 45, Width:150 ),
                         new ReportObjectField("sum(NetAmount)", 450, 45, Width:75, Mask: "0.00", Alignment:Alignment.Right ),
                         new ReportObjectLabel("Vat", 300, 55, Width:150 ),
@@ -393,6 +396,8 @@ namespace IcebearDemo
             ReportDemo reportDemo = (ReportDemo)listBox1.SelectedItem;
 
             reportDemo.h.Invoke();
+
+            report.ShowGrid = checkBoxShowGrid.Checked;
 
             report.Print(printDialog1.PrinterSettings.PrinterName);
 
