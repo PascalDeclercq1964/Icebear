@@ -227,8 +227,8 @@ namespace IcebearDemo
         {
             report = NewReport("ProductList");
             report.DataSource = products.OrderBy(p => p.ProductID);
-report.AddField("ProductID", 60, X: 15, HeaderLabel: "Product ID");
-            report.AddField("ProductName", 150, HeaderLabel: "Description");
+            report.AddField("ProductID", 60, X: 15, HeaderLabel: "Product ID");
+            report.AddField("ProductName", 150, HeaderLabel: "Description", CanGrow:true);
             report.AddField("UnitPrice", 60, HeaderLabel: "Unit price", Alignment: Alignment.Right, Mask: "0.00");
             report.AddField("UnitsInStock", 60, HeaderLabel: "Stock qty", Alignment: Alignment.Right);
             report.AddField("UnitsOnOrder", 60, HeaderLabel: "On order qty", Alignment: Alignment.Right, Mask: "#");
@@ -334,7 +334,7 @@ report.AddField("ProductID", 60, X: 15, HeaderLabel: "Product ID");
             Report report = new Report();
 
             Style defaultStyle = report.DefaultStyle.Clone();
-            defaultStyle.Font = new Font("Calibri", 11, GraphicsUnit.Point);
+            defaultStyle.Font = new Font("Arial", 11, GraphicsUnit.Point);
             report.DefaultStyle = defaultStyle;
 
             Style titleStyle = defaultStyle.Clone();
@@ -370,19 +370,6 @@ report.AddField("ProductID", 60, X: 15, HeaderLabel: "Product ID");
 
             //report.AlternatingRowsPrimaryColor = Color.White;
             //report.AlternatingRowsSecondaryColor = Color.LightGray;
-            if (false)
-            {
-                Pen gridPen = new Pen(Color.LightGray, 0.5f);
-
-                for (int i=0; i<report.PrintableAreaWidth;i+=25)
-                {
-                    report.PageHeader.ReportObjects.Add(new ReportObjectLine() { XLeft = i, XRight = i, YTop = 0, YBottom = report.PrintableAreaLength, Pen=gridPen });
-                }
-                for (int i = 0; i < report.PrintableAreaLength; i += 25)
-                {
-                    report.PageHeader.ReportObjects.Add(new ReportObjectLine() { XLeft = 0, XRight = report.PrintableAreaWidth, YTop = i, YBottom = i, Pen = gridPen });
-                }
-            }
             return report;
         }
 

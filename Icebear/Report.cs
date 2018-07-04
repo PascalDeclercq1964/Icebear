@@ -16,25 +16,25 @@ namespace IceBear
 {
     /*
      Todo's
-        - Can Grow implement everywhere and test: will not be good 
-            - precalculate length of section for alternating color and prevent page overflow
-        - alternating detail: respect growth
-        - Subreport: keep together
+        - Can Grow 
+            - [bug] precalculate length of section for alternating color and prevent page overflow
+            - [bug] still problems : see demo product list
+        - Subreport:
+            - [feature] keep together
+            - [bug] respect page break
 
-        - implement Barcodes
-        - implement Subreports
-        - implement Output to printer
-        - implement output to stream
-        - trap & log errors
+        - [feature] implement Barcodes
+        - [feature] implement output to stream
+        - [feature] trap & log errors
 
-        - implement collection fields
-        - ReportHeader
-        - ReportFooter with force to new page
-        - group header: repeat on each page
-        - pagefooter: force to bottom of the page
-        - conditional formatting
-        - print in columns
-        - Crosstab
+        - [feature] implement collection fields such as DataTable rows
+        - [feature] ReportHeader
+        - [feature] ReportFooter with force to new page
+        - [feature] group header: repeat on each page
+        - [feature] pagefooter: force to bottom of the page
+        - [feature] conditional formatting
+        - [feature] print in columns
+        - [feature] Crosstab
 
         Done:
         - implement Page Size : apply it in the renderer
@@ -127,7 +127,7 @@ namespace IceBear
 
         internal GenericReport genericReport;
 
-        const double fontSizeToHeight = 1f;
+        const double fontSizeToHeight = 1.35f;
 
         public void GeneratePDF(string FileName, bool OpenWhenDone = true)
         {
@@ -436,7 +436,7 @@ namespace IceBear
         //    this.DetailSection.ReportObjects.Add(field);
         //}
 
-        public void AddField(string FieldName, double Width, double? X=null, double? Y=null, double? Height=null, string HeaderLabel = null, Alignment Alignment = Alignment.Left, string Mask = null, string ID = null)
+        public void AddField(string FieldName, double Width, double? X=null, double? Y=null, double? Height=null, string HeaderLabel = null, Alignment Alignment = Alignment.Left, string Mask = null, string ID = null, bool CanGrow=true)
         {
             if (Y.HasValue)
                 xNextPosition = 0;
@@ -456,7 +456,7 @@ namespace IceBear
 
                 this.SectionForAutoHeaderLabels.ReportObjects.Add(new ReportObjectLabel(HeaderLabel, X.Value, YTopForAutoAddedFieldsInHeader, Width: Width, Heigth:Height, Alignment: Alignment));
             }
-            this.DetailSection.ReportObjects.Add(new ReportObjectField() { FieldName = FieldName, XLeft = X.Value, XRight = X.Value + Width, YTop = 0, YBottom = Height.Value, Alignment = Alignment, Mask = Mask, ID = ID, CanGrow=true });
+            this.DetailSection.ReportObjects.Add(new ReportObjectField() { FieldName = FieldName, XLeft = X.Value, XRight = X.Value + Width, YTop = 0, YBottom = Height.Value, Alignment = Alignment, Mask = Mask, ID = ID, CanGrow=CanGrow });
 
             xNextPosition += Width + 3;
         }
@@ -538,6 +538,7 @@ namespace IceBear
         string ID { get; set; }
 
         double Render(object row, GenericReport engine, double XOffset, double YOffset, Style DefaultStyle, Dictionary<string, double> aggregatedValues = null);
+        void Render2(object row, double XOffset, double YOffset, Style DefaultStyle, out reportItem RenderedItem, out double Growth, Dictionary<string, double> aggregatedValues = null);
     }
 
     #endregion
@@ -674,6 +675,53 @@ namespace IceBear
 
             return growth+ growthForThisLine;
         }
+
+        internal void Render2(object row, double XOffset, double YOffset, Style defaultStyle, out List<reportItem> RenderedItems, out double Growth)
+        {
+            RenderedItems = new List<reportItem>();
+            Growth = 0;
+            if (!string.IsNullOrEmpty(ID) && IsVisible != null)
+                if (!IsVisible(ID, row))
+                    return;
+
+            Style styleUsed = DefaultStyle;
+            if (!string.IsNullOrEmpty(ID) && Styler != null)
+                styleUsed = Styler(ID, row);
+
+            double growth = 0;
+            double previousYTop = -1;
+            double growthForThisLine = 0;
+
+            foreach (IReportObject reportObject in ReportObjects)
+            {
+                if (!string.IsNullOrEmpty(reportObject.ID) && IsVisible != null)
+                    if (!IsVisible(reportObject.ID, row))
+                        return;
+
+
+                if (!string.IsNullOrEmpty(reportObject.ID) && Styler != null)
+                    styleUsed = Styler(reportObject.ID, row);
+
+
+                if (reportObject.YTop != previousYTop)
+                {
+                    growth += growthForThisLine;
+                    YOffset += growthForThisLine;
+                    growthForThisLine = 0;
+                }
+
+                double growthForThisObject;
+                reportItem renderedItem = null;
+                reportObject.Render2(row,  XOffset, YOffset, styleUsed ?? defaultStyle, out renderedItem, out growthForThisObject, aggregatedValues);
+                RenderedItems.Add(renderedItem);
+
+                growthForThisLine = Math.Max(growthForThisLine, growthForThisObject);
+                previousYTop = reportObject.YTop;
+            }
+
+            return;
+        }
+
 
         internal void calculateAggregates(object row)
         {
@@ -882,6 +930,11 @@ namespace IceBear
             }
             return obj;
         }
+
+        public void Render2(object row, double XOffset, double YOffset, Style DefaultStyle, out reportItem RenderedItem, out double Growth, Dictionary<string, double> aggregatedValues = null)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class ReportObjectLabel : IReportObject
@@ -921,6 +974,11 @@ namespace IceBear
 
             return 0; //a label is not supposed to grow
         }
+
+        public void Render2(object row, double XOffset, double YOffset, Style DefaultStyle, out reportItem RenderedItem, out double Growth, Dictionary<string, double> aggregatedValues = null)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class ReportObjectLine : IReportObject
@@ -942,6 +1000,10 @@ namespace IceBear
             return 0; //a line is not supposed to grow
         }
 
+        public void Render2(object row, double XOffset, double YOffset, Style DefaultStyle, out reportItem RenderedItem, out double Growth, Dictionary<string, double> aggregatedValues = null)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class ReportObjectRectangle : IReportObject
@@ -964,6 +1026,10 @@ namespace IceBear
             return 0; //a rectangle is not supposed to grow
         }
 
+        public void Render2(object row, double XOffset, double YOffset, Style DefaultStyle, out reportItem RenderedItem, out double Growth, Dictionary<string, double> aggregatedValues = null)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class ReportObjectImage : IReportObject
@@ -979,29 +1045,39 @@ namespace IceBear
 
         public double Render(object row, GenericReport engine, double XOffset, double YOffset, Style DefaultStyle, Dictionary<string, double> aggregatedValues)
         {
+
             Image image;
-            if (!string.IsNullOrEmpty(ImageFileName))
-            {
-                image = Image.FromFile(ImageFileName);
-            }
-            else if (!string.IsNullOrEmpty(ImageFileNameInRow))
-            {
-                object fileName = row.GetType().GetProperty(ImageFileNameInRow).GetValue(row);
-                if (fileName == null)
-                    return 0;
-                image = Image.FromFile(fileName.ToString());
-            }
-            else if (!string.IsNullOrEmpty(ImageArrayInRow))
-            {
-                object imageArray = row.GetType().GetProperty(ImageArrayInRow).GetValue(row);
-                if (imageArray == null)
-                    return 0;
 
-                image = Image.FromStream(new MemoryStream((byte[])imageArray));
+            try
+            {
+                if (!string.IsNullOrEmpty(ImageFileName))
+                {
+                    image = Image.FromFile(ImageFileName);
+                }
+                else if (!string.IsNullOrEmpty(ImageFileNameInRow))
+                {
+                    object fileName = row.GetType().GetProperty(ImageFileNameInRow).GetValue(row);
+                    if (fileName == null)
+                        return 0;
+                    image = Image.FromFile(fileName.ToString());
+                }
+                else if (!string.IsNullOrEmpty(ImageArrayInRow))
+                {
+                    object imageArray = row.GetType().GetProperty(ImageArrayInRow).GetValue(row);
+                    if (imageArray == null)
+                        return 0;
 
+                    image = Image.FromStream(new MemoryStream((byte[])imageArray));
+
+                }
+                else
+                    return 0; //no image provided
             }
-            else
-                return 0; //no image provided
+            catch (Exception e)
+            {
+                //AddToLog("ERROR", "Error loading picture", e);
+                return 0;
+            }
 
             double width = 0; // XRight-XLeft;
             double height = 0; // YTop-YBottom;
@@ -1024,6 +1100,10 @@ namespace IceBear
             return 0;   //an image is not supposed to grow
         }
 
+        public void Render2(object row, double XOffset, double YOffset, Style DefaultStyle, out reportItem RenderedItem, out double Growth, Dictionary<string, double> aggregatedValues = null)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class ReportObjectSubReport : IReportObject
@@ -1058,6 +1138,11 @@ namespace IceBear
             }
            
             return growth;
+        }
+
+        public void Render2(object row, double XOffset, double YOffset, Style DefaultStyle, out reportItem RenderedItem, out double Growth, Dictionary<string, double> aggregatedValues = null)
+        {
+            throw new NotImplementedException();
         }
     }
 
@@ -1155,7 +1240,7 @@ namespace IceBear
         internal List<reportItem> reportItems { get; set; }
     }
 
-    internal class reportItem 
+    public class reportItem 
     {
 
         internal reportObjectTypes reportObjectType { get; set; }
