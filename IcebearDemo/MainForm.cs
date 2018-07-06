@@ -188,8 +188,26 @@ namespace IcebearDemo
             report.AddField("CompanyName", 150, HeaderLabel:"Name");
             report.AddField("Address", 200, HeaderLabel:"Address");
             report.AddField("City", 200, HeaderLabel:"City");
-            
-           
+
+            report.ReportHeader = new ReportSection()
+            {
+                Height = 100,
+                ReportObjects =
+               {
+                   new ReportObjectLabel("Report header",0, 1, Width:150)
+               },
+                ForceNewPage=ReportSection.ForceNewPageTypes.AfterSection
+            };
+            report.ReportFooter = new ReportSection()
+            {
+                Height = 100,
+                ReportObjects =
+               {
+                   new ReportObjectLabel("Report footer",0, 1, Width:150)
+               },
+                ForceNewPage=ReportSection.ForceNewPageTypes.BeforeSection
+            };
+
         }
         void CustomerListPerCountry()
         {
@@ -303,7 +321,7 @@ namespace IcebearDemo
         public void OrderWithSubReport()
         {
 
-            var selectedOrders = orders.Take(10);
+            var selectedOrders = orders.Take(100);
 
             selectedOrders.ToList().ForEach(o => o.OrderDetails = orderDetails.Where(od => od.OrderID == o.OrderID).ToList());
 
@@ -348,7 +366,7 @@ namespace IcebearDemo
                 ID = "PageHeader",
                 DefaultStyle = headerStyle,
                 ReportObjects = {
-                    new ReportObjectLabel(Title, 400, 3, XRight:report.PrintableAreaWidth, Alignment:Alignment.Right){Style=titleStyle },
+                    new ReportObjectLabel(Title, 300, 3, XRight:report.PrintableAreaWidth, Alignment:Alignment.Right){Style=titleStyle },
                     new ReportObjectRectangle(){XLeft=0, XRight=report.PrintableAreaWidth, YTop=26, YBottom=46 },
                     new ReportObjectImage(){ImageFileName=@"C:\Users\Pascal\Pictures\Icebear reporting company logo.png", XLeft=0, YTop=0, YBottom=25}
                 }
@@ -368,8 +386,9 @@ namespace IcebearDemo
                 }
             };
 
-            //report.AlternatingRowsPrimaryColor = Color.White;
-            //report.AlternatingRowsSecondaryColor = Color.LightGray;
+            report.AlternatingRowsPrimaryColor = Color.White;
+            report.AlternatingRowsSecondaryColor = Color.LightGray;
+            report.AlternateColorOfDetailLines = true;
             return report;
         }
 
