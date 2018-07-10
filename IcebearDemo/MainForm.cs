@@ -341,7 +341,10 @@ report.AddField("ProductID", 60, X: 15, HeaderLabel: "Product ID");
             titleStyle.Font=new Font("Calibri", 20, FontStyle.Bold, GraphicsUnit.Point);
             Style headerStyle = defaultStyle.Clone();
             headerStyle.Font= new Font("Calibri", 11, FontStyle.Bold, GraphicsUnit.Point);
+            headerStyle.Brush = Brushes.White;
 
+            Brush b = Brushes.DarkGray;
+            Pen p = new Pen(Color.DarkGray, 0);
             report.PageHeader = new ReportSection()
             {
                 Height = 48,
@@ -349,7 +352,7 @@ report.AddField("ProductID", 60, X: 15, HeaderLabel: "Product ID");
                 DefaultStyle = headerStyle,
                 ReportObjects = {
                     new ReportObjectLabel(Title, 400, 3, XRight:report.PrintableAreaWidth, Alignment:Alignment.Right){Style=titleStyle },
-                    new ReportObjectRectangle(){XLeft=0, XRight=report.PrintableAreaWidth, YTop=26, YBottom=46 },
+                    new ReportObjectRectangle(){XLeft=0, XRight=report.PrintableAreaWidth, YTop=26, YBottom=46, Brush=b, Pen=p },
                     new ReportObjectImage(){ImageFileName=@"C:\Users\Pascal\Pictures\Icebear reporting company logo.png", XLeft=0, YTop=0, YBottom=25}
                 }
             };
