@@ -188,8 +188,26 @@ namespace IcebearDemo
             report.AddField("CompanyName", 150, HeaderLabel:"Name");
             report.AddField("Address", 200, HeaderLabel:"Address");
             report.AddField("City", 200, HeaderLabel:"City");
-            
-           
+
+            report.ReportHeader = new ReportSection()
+            {
+                Height = 100,
+                ReportObjects =
+               {
+                   new ReportObjectLabel("Report header",0, 1, Width:150)
+               },
+                ForceNewPage=ReportSection.ForceNewPageTypes.AfterSection
+            };
+            report.ReportFooter = new ReportSection()
+            {
+                Height = 100,
+                ReportObjects =
+               {
+                   new ReportObjectLabel("Report footer",0, 1, Width:150)
+               },
+                ForceNewPage=ReportSection.ForceNewPageTypes.BeforeSection
+            };
+
         }
         void CustomerListPerCountry()
         {
@@ -227,8 +245,8 @@ namespace IcebearDemo
         {
             report = NewReport("ProductList");
             report.DataSource = products.OrderBy(p => p.ProductID);
-report.AddField("ProductID", 60, X: 15, HeaderLabel: "Product ID");
-            report.AddField("ProductName", 150, HeaderLabel: "Description");
+            report.AddField("ProductID", 60, X: 15, HeaderLabel: "Product ID");
+            report.AddField("ProductName", 150, HeaderLabel: "Description", CanGrow:true);
             report.AddField("UnitPrice", 60, HeaderLabel: "Unit price", Alignment: Alignment.Right, Mask: "0.00");
             report.AddField("UnitsInStock", 60, HeaderLabel: "Stock qty", Alignment: Alignment.Right);
             report.AddField("UnitsOnOrder", 60, HeaderLabel: "On order qty", Alignment: Alignment.Right, Mask: "#");
@@ -303,7 +321,7 @@ report.AddField("ProductID", 60, X: 15, HeaderLabel: "Product ID");
         public void OrderWithSubReport()
         {
 
-            var selectedOrders = orders.Take(10);
+            var selectedOrders = orders.Take(100);
 
             selectedOrders.ToList().ForEach(o => o.OrderDetails = orderDetails.Where(od => od.OrderID == o.OrderID).ToList());
 
@@ -334,25 +352,22 @@ report.AddField("ProductID", 60, X: 15, HeaderLabel: "Product ID");
             Report report = new Report();
 
             Style defaultStyle = report.DefaultStyle.Clone();
-            defaultStyle.Font = new Font("Calibri", 11, GraphicsUnit.Point);
+            defaultStyle.Font = new Font("Arial", 11, GraphicsUnit.Point);
             report.DefaultStyle = defaultStyle;
 
             Style titleStyle = defaultStyle.Clone();
             titleStyle.Font=new Font("Calibri", 20, FontStyle.Bold, GraphicsUnit.Point);
             Style headerStyle = defaultStyle.Clone();
             headerStyle.Font= new Font("Calibri", 11, FontStyle.Bold, GraphicsUnit.Point);
-            headerStyle.Brush = Brushes.White;
 
-            Brush b = Brushes.DarkGray;
-            Pen p = new Pen(Color.DarkGray, 0);
             report.PageHeader = new ReportSection()
             {
                 Height = 48,
                 ID = "PageHeader",
                 DefaultStyle = headerStyle,
                 ReportObjects = {
-                    new ReportObjectLabel(Title, 400, 3, XRight:report.PrintableAreaWidth, Alignment:Alignment.Right){Style=titleStyle },
-                    new ReportObjectRectangle(){XLeft=0, XRight=report.PrintableAreaWidth, YTop=26, YBottom=46, Brush=b, Pen=p },
+                    new ReportObjectLabel(Title, 300, 3, XRight:report.PrintableAreaWidth, Alignment:Alignment.Right){Style=titleStyle },
+                    new ReportObjectRectangle(){XLeft=0, XRight=report.PrintableAreaWidth, YTop=26, YBottom=46 },
                     new ReportObjectImage(){ImageFileName=@"C:\Users\Pascal\Pictures\Icebear reporting company logo.png", XLeft=0, YTop=0, YBottom=25}
                 }
             };
@@ -371,21 +386,9 @@ report.AddField("ProductID", 60, X: 15, HeaderLabel: "Product ID");
                 }
             };
 
-            //report.AlternatingRowsPrimaryColor = Color.White;
-            //report.AlternatingRowsSecondaryColor = Color.LightGray;
-            if (false)
-            {
-                Pen gridPen = new Pen(Color.LightGray, 0.5f);
-
-                for (int i=0; i<report.PrintableAreaWidth;i+=25)
-                {
-                    report.PageHeader.ReportObjects.Add(new ReportObjectLine() { XLeft = i, XRight = i, YTop = 0, YBottom = report.PrintableAreaLength, Pen=gridPen });
-                }
-                for (int i = 0; i < report.PrintableAreaLength; i += 25)
-                {
-                    report.PageHeader.ReportObjects.Add(new ReportObjectLine() { XLeft = 0, XRight = report.PrintableAreaWidth, YTop = i, YBottom = i, Pen = gridPen });
-                }
-            }
+            report.AlternatingRowsPrimaryColor = Color.White;
+            report.AlternatingRowsSecondaryColor = Color.LightGray;
+            report.AlternateColorOfDetailLines = true;
             return report;
         }
 

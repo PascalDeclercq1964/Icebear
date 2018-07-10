@@ -16,30 +16,32 @@ namespace IceBear
 {
     /*
      Todo's
-        - Can Grow implement everywhere and test: will not be good 
-            - precalculate length of section for alternating color and prevent page overflow
-        - alternating detail: respect growth
-        - Subreport: keep together
 
-        - implement Barcodes
-        - implement Subreports
-        - implement Output to printer
-        - implement output to stream
-        - trap & log errors
+        - reportFooter : allow to suppress pageheader
 
-        - implement collection fields
-        - ReportHeader
-        - ReportFooter with force to new page
-        - group header: repeat on each page
-        - pagefooter: force to bottom of the page
-        - conditional formatting
-        - print in columns
-        - Crosstab
+        - [feature] implement Barcodes
+        - [feature] implement output to stream
+        - [feature] trap & log errors
+
+        - [feature] implement collection fields such as DataTable rows
+        - [feature] ReportHeader
+        - [feature] ReportFooter with force to new page
+        - [feature] group header: repeat on each page
+        - [feature] pagefooter: force to bottom of the page
+        - [feature] conditional formatting
+        - [feature] print in columns
+        - [feature] Crosstab
 
         Done:
         - implement Page Size : apply it in the renderer
         - implement page orientation : apply it in the renderer
         - report variable (pagenumber, totalpages)
+        - Can Grow 
+            - done [bug] precalculate length of section for alternating color and prevent page overflow
+            - done [bug] still problems : see demo product list
+        - Subreport:
+            - done [feature] keep together
+            - Done [bug] respect page break
 
      */
     public class Report
@@ -55,6 +57,8 @@ namespace IceBear
             this.SelectedPageType = PageType;
             this.SelectedOrientation = Orientation;
             DefaultStyle = Style.Default;
+            AlternatingRowsPrimaryColor = Color.White;
+            AlternatingRowsSecondaryColor = Color.LightGray;
 
         }
 
@@ -127,7 +131,7 @@ namespace IceBear
 
         internal GenericReport genericReport;
 
-        const double fontSizeToHeight = 1f;
+        const double fontSizeToHeight = 1.35f;
 
         public void GeneratePDF(string FileName, bool OpenWhenDone = true)
         {
@@ -252,6 +256,7 @@ namespace IceBear
             object previousRow = null;
             bool pageBreak = true;
             pagenumber = 0;
+            List<reportItem> renderedItems;
 
             foreach (object row in DataSource)
             {
@@ -271,31 +276,37 @@ namespace IceBear
                 {
                     if (reportGroup.GroupingHasChanged(row))
                     {
-                        if ((reportGroup.StartOnNewPage && yOffset>TopMargin ) || IsPageBreakNeeded(reportGroup.HeaderSection.Height))
+                        double growthForThisSection;
+                        reportGroup.HeaderSection.Render2(row, xOffset, DefaultStyle, out renderedItems, out growthForThisSection);
+
+                        if ((reportGroup.StartOnNewPage && yOffset>TopMargin ) || IsPageBreakNeeded(reportGroup.HeaderSection.Height+growthForThisSection))
                             NewPage(previousRow, row);
 
+                        genericReport.AddReportItems(renderedItems, yOffset);
 
-                        double growthForThisSection=reportGroup.HeaderSection.Render(row, genericReport, xOffset, yOffset, DefaultStyle);
                         yOffset += reportGroup.HeaderSection.Height+growthForThisSection;
                         reportGroup.FooterSection.aggregatedValues = null;
 
                     }
                 }
 
+                double growthForDetailSection;
+                DetailSection.Render2(row, xOffset, DefaultStyle, out renderedItems, out growthForDetailSection);
+
+                if (IsPageBreakNeeded(DetailSection.Height+ growthForDetailSection))
+                    NewPage(previousRow, row);
+
                 //Alternating detail color
                 if (AlternateColorOfDetailLines)
                 {
                     Brush brush = applyAlternateColor ? new SolidBrush(AlternatingRowsPrimaryColor) : new SolidBrush( AlternatingRowsSecondaryColor);
                     Pen pen = new Pen(Color.White, 0);
-                    genericReport.CurrentPage.reportItems.Add(new reportItem() {reportObjectType= reportObjectTypes.Rectangle, brush=brush, X=LeftMargin, Y=yOffset, W=PrintableAreaWidth, H=DetailSection.Height, pen=pen });
-                    //renderEngine.DrawRectangle(null, brush, LeftMargin, yOffset, PrintableAreaWidth, DetailSection.Height);
+                    genericReport.CurrentPage.reportItems.Add(new reportItem() {reportObjectType= reportObjectTypes.Rectangle, brush=brush, X=LeftMargin, Y=yOffset, W=PrintableAreaWidth, H=DetailSection.Height+growthForDetailSection, pen=pen });
                     applyAlternateColor = !applyAlternateColor;
                 }
 
-                if (IsPageBreakNeeded(DetailSection.Height))
-                    NewPage(previousRow, row);
 
-                double growthForDetailSection=DetailSection.Render(row, genericReport, xOffset, yOffset, DefaultStyle);
+                genericReport.AddReportItems(renderedItems, yOffset);
 
                 yOffset += DetailSection.Height+growthForDetailSection;
 
@@ -315,24 +326,33 @@ namespace IceBear
                 Footers(previousRow, null);
                 if (PageFooter != null)
                 {
-                    double y = PageLength - (PageFooter != null ? PageFooter.Height : 0) - (ReportHeader != null ? ReportHeader.Height : 0)- BottomMargin;
+                    double pageFooterGrowth;
+                    PageFooter.Render2(previousRow, xOffset, DefaultStyle, out renderedItems, out pageFooterGrowth);
+
+                    double y = PageLength - (PageFooter.Height+pageFooterGrowth) - (ReportHeader != null ? ReportHeader.Height : 0)- BottomMargin;
                     if (y < yOffset)
                     {
                         genericReport.NewPage();
                         yOffset = TopMargin;
                         pagenumber++;
                     }
-                    //renderEngine.CurrentPage.reportItems.Add(new genericReport.reportItem() { });
-                    double growth =PageFooter.Render(previousRow, genericReport, xOffset, y, DefaultStyle);
-                    yOffset += PageFooter.Height+growth;
+                    genericReport.AddReportItems(renderedItems, yOffset);
+                    yOffset += PageFooter.Height+pageFooterGrowth;
                 }
 
                 if (ReportFooter != null)
                 {
-                    double y = PageLength - ReportHeader.Height;
+                    if (ReportFooter.ForceNewPage==ReportSection.ForceNewPageTypes.BeforeSection)
+                    {
+                        NewPage(previousRow, previousRow);
+                    }
+                    double growthReportFooter;
+                    ReportFooter.Render2(previousRow, xOffset, DefaultStyle, out renderedItems, out growthReportFooter);
 
-                    double growth=ReportFooter.Render(previousRow, genericReport, xOffset, y, DefaultStyle);
-                    yOffset += PageFooter.Height+growth;
+                    double y = PageLength - ReportHeader.Height-growthReportFooter;
+                    genericReport.AddReportItems(renderedItems, yOffset);
+
+                    yOffset += ReportFooter.Height+ growthReportFooter;
                 }
             }
 
@@ -359,9 +379,13 @@ namespace IceBear
 
         private void NewPage(object previousRow, object row)
         {
+            List<reportItem> renderedItems;
+            double growth;
+
             if (previousRow != null && PageFooter != null)
             {
-                PageFooter.Render(previousRow, genericReport, xOffset, PageLength - PageFooter.Height - BottomMargin, DefaultStyle);
+                PageFooter.Render2(previousRow, xOffset, DefaultStyle, out renderedItems, out growth);
+                genericReport.AddReportItems(renderedItems, PageLength - PageFooter.Height - BottomMargin);
             }
 
             genericReport.NewPage();
@@ -370,13 +394,23 @@ namespace IceBear
 
             if (previousRow == null && ReportHeader != null)
             {
-                double growth=ReportHeader.Render(row, genericReport, xOffset, yOffset, DefaultStyle);
-                yOffset += ReportHeader.Height+growth;
+                ReportHeader.Render2(row, xOffset, DefaultStyle, out renderedItems, out growth);
+                genericReport.AddReportItems(renderedItems, yOffset);
+                if (ReportHeader.ForceNewPage == ReportSection.ForceNewPageTypes.AfterSection)
+                {
+                    genericReport.NewPage();
+                    yOffset = TopMargin;
+                    pagenumber++;
+                }
+                else
+                   yOffset += ReportHeader.Height+growth;
+
             }
 
             if (PageHeader != null)
             {
-                double growth=PageHeader.Render(row, genericReport, xOffset, yOffset, DefaultStyle);
+                PageHeader.Render2(row, xOffset, DefaultStyle, out renderedItems, out growth);
+                genericReport.AddReportItems(renderedItems, yOffset);
                 yOffset += PageHeader.Height+growth;
             }
 
@@ -388,17 +422,12 @@ namespace IceBear
                 for (double i = LeftMargin; i < PrintableAreaWidth; i += 25)
                 {
                     genericReport.CurrentPage.reportItems.Add(new reportItem() { reportObjectType = reportObjectTypes.Line, X = i, Y = TopMargin, W = 0, H = PrintableAreaLength, pen = gridPen });
-                    //ReportObjectLine l = new ReportObjectLine() { XLeft = i, XRight = i, YTop = 0, YBottom = PrintableAreaLength, Pen = gridPen };
-                    //l.Render(null, genericReport, xOffset, yOffset, DefaultStyle, null);
                 }
 
                 //horizontal lines
                 for (double i = TopMargin; i < PrintableAreaLength; i += 25)
                 {
                     genericReport.CurrentPage.reportItems.Add(new reportItem() { reportObjectType = reportObjectTypes.Line, X = LeftMargin, Y = i, W = PrintableAreaWidth, H = 0, pen = gridPen });
-                    //ReportObjectLine l = new ReportObjectLine() { XLeft = 0, XRight = PrintableAreaWidth, YTop = i, YBottom = i, Pen = gridPen };
-                    //l.Render(null, genericReport, xOffset, yOffset, DefaultStyle, null);
-
                 }
             }
         }
@@ -416,8 +445,12 @@ namespace IceBear
                     if (IsPageBreakNeeded(reportGroup.FooterSection.Height))
                         NewPage(previousRow, row);
 
-                    reportGroup.FooterSection.Render(reportGroup.previousRow, genericReport, xOffset, yOffset, DefaultStyle);
-                    yOffset += reportGroup.FooterSection.Height;
+                    double growth;
+                    List<reportItem> renderedItems;
+                    reportGroup.FooterSection.Render2(reportGroup.previousRow, xOffset, DefaultStyle, out renderedItems, out growth);
+                    genericReport.AddReportItems(renderedItems, yOffset);
+                    
+                    yOffset += reportGroup.FooterSection.Height+growth;
 
                 }
             }
@@ -436,7 +469,7 @@ namespace IceBear
         //    this.DetailSection.ReportObjects.Add(field);
         //}
 
-        public void AddField(string FieldName, double Width, double? X=null, double? Y=null, double? Height=null, string HeaderLabel = null, Alignment Alignment = Alignment.Left, string Mask = null, string ID = null)
+        public void AddField(string FieldName, double Width, double? X=null, double? Y=null, double? Height=null, string HeaderLabel = null, Alignment Alignment = Alignment.Left, string Mask = null, string ID = null, bool CanGrow=true)
         {
             if (Y.HasValue)
                 xNextPosition = 0;
@@ -456,7 +489,7 @@ namespace IceBear
 
                 this.SectionForAutoHeaderLabels.ReportObjects.Add(new ReportObjectLabel(HeaderLabel, X.Value, YTopForAutoAddedFieldsInHeader, Width: Width, Heigth:Height, Alignment: Alignment));
             }
-            this.DetailSection.ReportObjects.Add(new ReportObjectField() { FieldName = FieldName, XLeft = X.Value, XRight = X.Value + Width, YTop = 0, YBottom = Height.Value, Alignment = Alignment, Mask = Mask, ID = ID, CanGrow=true });
+            this.DetailSection.ReportObjects.Add(new ReportObjectField() { FieldName = FieldName, XLeft = X.Value, XRight = X.Value + Width, YTop = 0, YBottom = Height.Value, Alignment = Alignment, Mask = Mask, ID = ID, CanGrow=CanGrow });
 
             xNextPosition += Width + 3;
         }
@@ -537,7 +570,7 @@ namespace IceBear
         double YTop { get; set; }
         string ID { get; set; }
 
-        double Render(object row, GenericReport engine, double XOffset, double YOffset, Style DefaultStyle, Dictionary<string, double> aggregatedValues = null);
+        void Render2(object row, double XOffset, double YOffset, Style DefaultStyle, out List<reportItem> RenderedItems, out double Growth, Dictionary<string, double> aggregatedValues = null);
     }
 
     #endregion
@@ -621,11 +654,16 @@ namespace IceBear
             xPosition = 0;
         }
 
+        public enum ForceNewPageTypes { None, BeforeSection, AfterSection }
+
         public List<IReportObject> ReportObjects { get; set; }
 
         public double Height { get; set; }
         public Style DefaultStyle { get; set; }
         public string ID { get; set; }
+
+        public ForceNewPageTypes ForceNewPage {get; set;}
+
 
         public event ConditionDelegate IsVisible;
         public event StyleDelegate Styler;
@@ -634,17 +672,21 @@ namespace IceBear
         internal List<Tuple<string, AggregateTypes>> Aggregates { get; set; }
         internal double xPosition;
 
-        internal double Render(object row, GenericReport genericReport, double XOffset, double YOffset, Style defaultStyle)
+
+        internal void Render2(object row, double XOffset, Style defaultStyle, out List<reportItem> RenderedItems, out double Growth)
         {
+            RenderedItems = new List<reportItem>();
+            Growth = 0;
+            double yOffset = 0;
+
             if (!string.IsNullOrEmpty(ID) && IsVisible != null)
                 if (!IsVisible(ID, row))
-                    return 0;
+                    return;
 
             Style styleUsed = DefaultStyle;
             if (!string.IsNullOrEmpty(ID) && Styler != null)
                 styleUsed = Styler(ID, row);
 
-            double growth = 0;
             double previousYTop = -1;
             double growthForThisLine = 0;
 
@@ -652,7 +694,7 @@ namespace IceBear
             {
                 if (!string.IsNullOrEmpty(reportObject.ID) && IsVisible != null)
                     if (!IsVisible(reportObject.ID, row))
-                        return 0;
+                        continue;
 
 
                 if (!string.IsNullOrEmpty(reportObject.ID) && Styler != null)
@@ -661,19 +703,25 @@ namespace IceBear
 
                 if (reportObject.YTop != previousYTop)
                 {
-                    growth += growthForThisLine;
-                    YOffset += growthForThisLine;
+                    Growth += growthForThisLine;
+                    yOffset += growthForThisLine;
                     growthForThisLine = 0;
                 }
 
-                double growthForThisObject=reportObject.Render(row, genericReport, XOffset, YOffset, styleUsed ?? defaultStyle, aggregatedValues);
+                double growthForThisObject;
+                List<reportItem> renderedItems = null;
+                reportObject.Render2(row,  XOffset, yOffset, styleUsed ?? defaultStyle, out renderedItems, out growthForThisObject, aggregatedValues);
+                RenderedItems.AddRange(renderedItems);
 
                 growthForThisLine = Math.Max(growthForThisLine, growthForThisObject);
                 previousYTop = reportObject.YTop;
             }
 
-            return growth+ growthForThisLine;
+            Growth += growthForThisLine;
+
+            return;
         }
+
 
         internal void calculateAggregates(object row)
         {
@@ -823,9 +871,22 @@ namespace IceBear
         public string ID { get; set; }
         public bool CanGrow { get; set; }
 
-        public double Render(object row, GenericReport engine, double XOffset, double YOffset, Style DefaultStyle, Dictionary<string, double> aggregatedValues)
+        object getPropertyValue(object obj, string propertyName)
         {
-            double growth = 0;
+            //foreach (var prop in propertyName.Split('.').Select(s => obj.GetType().GetProperty(s)))
+            //    obj = prop.GetValue(obj, null);
+
+            foreach (string propName in propertyName.Split('.'))
+            {
+                obj = obj.GetType().GetProperty(propName).GetValue(obj, null); 
+            }
+            return obj;
+        }
+
+        public void Render2(object row, double XOffset, double YOffset, Style DefaultStyle, out List<reportItem> RenderedItems, out double Growth, Dictionary<string, double> aggregatedValues = null)
+        {
+            Growth = 0;
+            RenderedItems = new List<IceBear.reportItem>();
 
             string valueToRender;
             if (aggregatedValues != null && aggregatedValues.ContainsKey(FieldName))
@@ -854,33 +915,21 @@ namespace IceBear
                 5 lines = 68.21
                 Delta = 1.215x fontsize (13.37) and an extra ofn 0.1245x fontsize for the first line
                 */
-                Graphics g= Graphics.FromHwnd(IntPtr.Zero);
+                Graphics g = Graphics.FromHwnd(IntPtr.Zero);
 
                 g.PageUnit = GraphicsUnit.Point;
-                SizeF s=g.MeasureString(valueToRender, usedStyle.Font, Convert.ToInt32(XRight-XLeft));
+                SizeF s = g.MeasureString(valueToRender, usedStyle.Font, Convert.ToInt32(XRight - XLeft));
                 float heigth = s.Height;
 
                 if (heigth > (yBottomUsed - YTop))
                 {
-                    growth = heigth - (yBottomUsed - YTop); // + usedStyle.Font.SizeInPoints/2; //this last stuff is experimantal
-                    yBottomUsed += growth;
+                    Growth = heigth - (yBottomUsed - YTop); // + usedStyle.Font.SizeInPoints/2; //this last stuff is experimantal
+                    yBottomUsed += Growth;
                 }
             }
 
-            engine.CurrentPage.reportItems.Add(new reportItem() {reportObjectType=reportObjectTypes.String, text = valueToRender, style = usedStyle, X = XOffset + XLeft, Y = YOffset + YTop, W = XRight - XLeft, H = yBottomUsed - YTop, alignment = Alignment });
 
-            return growth;
-        }
-        object getPropertyValue(object obj, string propertyName)
-        {
-            //foreach (var prop in propertyName.Split('.').Select(s => obj.GetType().GetProperty(s)))
-            //    obj = prop.GetValue(obj, null);
-
-            foreach (string propName in propertyName.Split('.'))
-            {
-                obj = obj.GetType().GetProperty(propName).GetValue(obj, null); 
-            }
-            return obj;
+            RenderedItems.Add(new reportItem() { reportObjectType = reportObjectTypes.String, text = valueToRender, style = usedStyle, X = XOffset + XLeft, Y = YOffset + YTop, W = XRight - XLeft, H = yBottomUsed - YTop, alignment = Alignment });
         }
     }
 
@@ -911,15 +960,16 @@ namespace IceBear
         public double YTop { get; set; }
         public string ID { get; set; }
 
-        public double Render(object row, GenericReport engine, double XOffset, double YOffset, Style DefaultStyle, Dictionary<string, double> aggregatedValues)
+        public void Render2(object row, double XOffset, double YOffset, Style DefaultStyle, out List<reportItem> RenderedItems, out double Growth, Dictionary<string, double> aggregatedValues = null)
         {
+            Growth = 0;
+            RenderedItems = new List<IceBear.reportItem>();
+
             Style usedStyle = Style ?? DefaultStyle;
             double yBottomUsed = YBottom != -1 ? YBottom : YTop + usedStyle.Font.SizeInPoints;
 
             //engine.DrawString(Text, usedStyle, XOffset + XLeft, YOffset + YTop, XRight - XLeft, yBottomUsed - YTop, Alignment);
-            engine.CurrentPage.reportItems.Add(new reportItem() { reportObjectType = reportObjectTypes.String, text = Text, style = usedStyle, X = XOffset + XLeft, Y = YOffset + YTop, W = XRight - XLeft, H = yBottomUsed - YTop, alignment = Alignment });
-
-            return 0; //a label is not supposed to grow
+            RenderedItems.Add(new reportItem() { reportObjectType = reportObjectTypes.String, text = Text, style = usedStyle, X = XOffset + XLeft, Y = YOffset + YTop, W = XRight - XLeft, H = yBottomUsed - YTop, alignment = Alignment });
         }
     }
 
@@ -933,15 +983,14 @@ namespace IceBear
         public Pen Pen { get; set; }
         public string ID { get; set; }
 
-        public double Render(object row, GenericReport engine, double XOffset, double YOffset, Style DefaultStyle, Dictionary<string, double> aggregatedValues)
+        public void Render2(object row, double XOffset, double YOffset, Style DefaultStyle, out List<reportItem> RenderedItems, out double Growth, Dictionary<string, double> aggregatedValues = null)
         {
+            Growth = 0;
+            RenderedItems = new List<IceBear.reportItem>();
+
             Pen penUsed = Pen ?? DefaultStyle.Pen;
-            //engine.DrawLine(penUsed, XLeft + XOffset, YBottom + YOffset, XRight + XOffset, YTop + YOffset);
-            engine.CurrentPage.reportItems.Add(new reportItem() { reportObjectType = reportObjectTypes.Line, pen = penUsed, X = XLeft + XOffset, Y = YBottom + YOffset, W = XRight - XLeft, H = YBottom - YTop });
-
-            return 0; //a line is not supposed to grow
+            RenderedItems.Add(new reportItem() { reportObjectType = reportObjectTypes.Line, pen = penUsed, X = XLeft + XOffset, Y = YBottom + YOffset, W = XRight - XLeft, H = YBottom - YTop });
         }
-
     }
 
     public class ReportObjectRectangle : IReportObject
@@ -954,16 +1003,17 @@ namespace IceBear
         public Brush Brush { get; set; }
         public string ID { get; set; }
 
-        public double Render(object row, GenericReport engine, double XOffset, double YOffset, Style DefaultStyle, Dictionary<string, double> aggregatedValues)
+
+        public void Render2(object row, double XOffset, double YOffset, Style DefaultStyle, out List<reportItem> RenderedItems, out double Growth, Dictionary<string, double> aggregatedValues = null)
         {
+            Growth = 0;
+            RenderedItems = new List<IceBear.reportItem>();
 
             Pen penUsed = Pen ?? DefaultStyle.Pen;
             Brush brushUsed = Brush ?? DefaultStyle.BrushForRectangles;
             //engine.DrawRectangle(penUsed, brushUsed, XLeft + XOffset, YTop + YOffset, XRight - XLeft, YBottom - YTop);
-            engine.CurrentPage.reportItems.Add(new reportItem() { reportObjectType = reportObjectTypes.Rectangle, pen = penUsed, brush = brushUsed, X = XLeft + XOffset, Y = YTop + YOffset, W = XRight - XLeft, H = YBottom - YTop });
-            return 0; //a rectangle is not supposed to grow
+            RenderedItems.Add(new reportItem() { reportObjectType = reportObjectTypes.Rectangle, pen = penUsed, brush = brushUsed, X = XLeft + XOffset, Y = YTop + YOffset, W = XRight - XLeft, H = YBottom - YTop });
         }
-
     }
 
     public class ReportObjectImage : IReportObject
@@ -977,31 +1027,44 @@ namespace IceBear
         public string ImageFileNameInRow { get; set; }
         public string ID { get; set; }
 
-        public double Render(object row, GenericReport engine, double XOffset, double YOffset, Style DefaultStyle, Dictionary<string, double> aggregatedValues)
+
+        public void Render2(object row, double XOffset, double YOffset, Style DefaultStyle, out List<reportItem> RenderedItems, out double Growth, Dictionary<string, double> aggregatedValues = null)
         {
+            Growth = 0;
+            RenderedItems = new List<IceBear.reportItem>();
+
             Image image;
-            if (!string.IsNullOrEmpty(ImageFileName))
-            {
-                image = Image.FromFile(ImageFileName);
-            }
-            else if (!string.IsNullOrEmpty(ImageFileNameInRow))
-            {
-                object fileName = row.GetType().GetProperty(ImageFileNameInRow).GetValue(row);
-                if (fileName == null)
-                    return 0;
-                image = Image.FromFile(fileName.ToString());
-            }
-            else if (!string.IsNullOrEmpty(ImageArrayInRow))
-            {
-                object imageArray = row.GetType().GetProperty(ImageArrayInRow).GetValue(row);
-                if (imageArray == null)
-                    return 0;
 
-                image = Image.FromStream(new MemoryStream((byte[])imageArray));
+            try
+            {
+                if (!string.IsNullOrEmpty(ImageFileName))
+                {
+                    image = Image.FromFile(ImageFileName);
+                }
+                else if (!string.IsNullOrEmpty(ImageFileNameInRow))
+                {
+                    object fileName = row.GetType().GetProperty(ImageFileNameInRow).GetValue(row);
+                    if (fileName == null)
+                        return;
+                    image = Image.FromFile(fileName.ToString());
+                }
+                else if (!string.IsNullOrEmpty(ImageArrayInRow))
+                {
+                    object imageArray = row.GetType().GetProperty(ImageArrayInRow).GetValue(row);
+                    if (imageArray == null)
+                        return;
 
+                    image = Image.FromStream(new MemoryStream((byte[])imageArray));
+
+                }
+                else
+                    return; //no image provided
             }
-            else
-                return 0; //no image provided
+            catch (Exception e)
+            {
+                //AddToLog("ERROR", "Error loading picture", e);
+                return;
+            }
 
             double width = 0; // XRight-XLeft;
             double height = 0; // YTop-YBottom;
@@ -1020,10 +1083,8 @@ namespace IceBear
                 width = XRight - XLeft;
                 height = image.Height * (width) / image.Width;
             }
-            engine.CurrentPage.reportItems.Add(new reportItem() {reportObjectType=reportObjectTypes.Image, X= XLeft + XOffset, Y= YTop + YOffset, W=width, H=height, image=image });
-            return 0;   //an image is not supposed to grow
+            RenderedItems.Add(new reportItem() { reportObjectType = reportObjectTypes.Image, X = XLeft + XOffset, Y = YTop + YOffset, W = width, H = height, image = image });
         }
-
     }
 
     public class ReportObjectSubReport : IReportObject
@@ -1036,8 +1097,11 @@ namespace IceBear
         public Report SubReport { get; set; }
         public string DataSource { get; set; }
 
-        public double Render(object row, GenericReport engine, double XOffset, double YOffset, Style DefaultStyle, Dictionary<string, double> aggregatedValues = null)
+        public void Render2(object row, double XOffset, double YOffset, Style DefaultStyle, out List<reportItem> RenderedItems, out double Growth, Dictionary<string, double> aggregatedValues = null)
         {
+            Growth = 0;
+            RenderedItems = new List<reportItem>();
+
             SubReport.DataSource = row.GetType().GetProperty(DataSource).GetValue(row) as IEnumerable<object>;
             SubReport.TopMargin = 0;
             SubReport.BottomMargin = 0;
@@ -1046,18 +1110,15 @@ namespace IceBear
 
             YOffset += YTop;
             XOffset += XLeft;
-            double growth = 0;
             foreach (reportItem item in SubReport.genericReport.CurrentPage.reportItems)
             {
-                growth = Math.Max(growth, item.Y + item.H);
+                Growth = Math.Max(Growth, item.Y + item.H);
 
                 item.Y += YOffset;
                 item.X += XOffset;
 
-                engine.CurrentPage.reportItems.Add(item);
+                RenderedItems.Add(item);
             }
-           
-            return growth;
         }
     }
 
@@ -1121,6 +1182,15 @@ namespace IceBear
         {
             reportPages.Add(new reportPage());
         }
+
+        internal void AddReportItems(List<reportItem> ReportItems, double YOffset)
+        {
+            foreach (reportItem item in ReportItems)
+            {
+                item.Y += YOffset;
+                CurrentPage.reportItems.Add(item);
+            }
+        }
     }
 
     #endregion
@@ -1155,7 +1225,7 @@ namespace IceBear
         internal List<reportItem> reportItems { get; set; }
     }
 
-    internal class reportItem 
+    public class reportItem 
     {
 
         internal reportObjectTypes reportObjectType { get; set; }
