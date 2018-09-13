@@ -19,6 +19,9 @@ namespace IceBear
 
         - reportFooter : allow to suppress pageheader
 
+		- bug: check if a section is defined (not null) before using it (ex footsection)
+		- bug: groupkey: also use cascading get property method
+		
         - [feature] implement Barcodes
         - [feature] implement output to stream
         - [feature] trap & log errors
