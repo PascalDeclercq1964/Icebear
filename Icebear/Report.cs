@@ -27,7 +27,6 @@ namespace IceBear
         - [feature] conditional formatting
         - [feature] print in columns
         - [feature] Crosstab
-        - [improvement] suppress repeating values use of compound key instead of single values
 
         Done:
         - implement Page Size : apply it in the renderer
@@ -45,6 +44,7 @@ namespace IceBear
         - [feature] ReportHeader
         - [feature] ReportFooter with force to new page
 		- [bug] check if a section is defined (not null) before using it (ex footsection)
+        - [improvement] suppress repeating values use of compound key instead of single values
      */
     public class Report
     {
@@ -482,7 +482,7 @@ namespace IceBear
         //    this.DetailSection.ReportObjects.Add(field);
         //}
 
-        public void AddField(string FieldName, double Width, double? X=null, double? Y=null, double? Height=null, string HeaderLabel = null, Alignment Alignment = Alignment.Left, string Mask = null, string ID = null, bool CanGrow=true, bool SuppressRepeatingValues=false)
+        public ReportObjectField AddField(string FieldName, double Width, double? X=null, double? Y=null, double? Height=null, string HeaderLabel = null, Alignment Alignment = Alignment.Left, string Mask = null, string ID = null, bool CanGrow=true, bool SuppressRepeatingValues=false)
         {
             if (Y.HasValue)
                 xNextPosition = 0;
@@ -502,9 +502,14 @@ namespace IceBear
 
                 this.SectionForAutoHeaderLabels.ReportObjects.Add(new ReportObjectLabel(HeaderLabel, X.Value, YTopForAutoAddedFieldsInHeader, Width: Width, Heigth:Height, Alignment: Alignment));
             }
-            this.DetailSection.ReportObjects.Add(new ReportObjectField() { FieldName = FieldName, XLeft = X.Value, XRight = X.Value + Width, YTop = 0, YBottom = Height.Value, Alignment = Alignment, Mask = Mask, ID = ID, CanGrow=CanGrow, SuppressRepeatingValues=SuppressRepeatingValues });
+
+
+            ReportObjectField reportObjectField = new ReportObjectField() { FieldName = FieldName, XLeft = X.Value, XRight = X.Value + Width, YTop = 0, YBottom = Height.Value, Alignment = Alignment, Mask = Mask, ID = ID, CanGrow = CanGrow, SuppressRepeatingValues = SuppressRepeatingValues };
+            this.DetailSection.ReportObjects.Add(reportObjectField);
 
             xNextPosition += Width + 3;
+
+            return reportObjectField;
         }
 
         private void GetPageSize()
@@ -884,6 +889,12 @@ namespace IceBear
         public string ID { get; set; }
         public bool CanGrow { get; set; }
         public bool SuppressRepeatingValues { get; set; }
+        /// <summary>
+        /// When SuppressRepeatingValues is used, SuppressRepeatingValuesChild can be used to reset the supression of a repeating value of that child field
+        /// Example: Given a report with fields "Name" & "Date", both with SuppressRepeatingValues=true. If "Name" changes, we want the "Date" repeated even when it is the same value of the previous line.
+        /// Assign the "Date" field to the SuppressRepeatingValuesChild of "Name".
+        /// </summary>
+        public ReportObjectField SuppressRepeatingValuesChild { get; set; }
 
         string previousValue;
 
@@ -913,6 +924,10 @@ namespace IceBear
 
             if (SuppressRepeatingValues && previousValue == valueToRender)
                 return;
+
+
+            if (SuppressRepeatingValuesChild != null)
+                SuppressRepeatingValuesChild.previousValue = null;
 
             Style usedStyle = Style ?? DefaultStyle;
             double yBottomUsed = YBottom != -1 ? YBottom : YTop + usedStyle.Font.SizeInPoints;
