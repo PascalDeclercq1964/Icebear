@@ -288,8 +288,7 @@ namespace IceBear
                         genericReport.AddReportItems(renderedItems, yOffset);
 
                         yOffset += reportGroup.HeaderSection.Height+growthForThisSection;
-						if (reportGroup.FooterSection!=null)
-                        	reportGroup.FooterSection.aggregatedValues = null;
+                        reportGroup.FooterSection.aggregatedValues = null;
 
                     }
                 }
@@ -948,7 +947,7 @@ namespace IceBear
         {
             this.Text = Text;
             this.XLeft = XLeft;
-            this.XRight = XRight ?? XLeft+(Width??100);
+            this.XRight = XRight ?? XLeft+(Width??10);
             this.YTop = YTop;
             this.YBottom = YBottom ?? (Heigth !=null ? YTop+Heigth.Value : -1); // cannot be null => -1 : which means not specified, will be set at render time
             this.Alignment = Alignment ?? IceBear.Alignment.Left;
@@ -1165,24 +1164,7 @@ namespace IceBear
         }
         internal Boolean GroupingHasChanged(object row)
         {
-            if (previousRow == null)
-                return true;
-
-            object previousValue = getPropertyValue(previousRow, this.GroupingKey);
-            object currentValue = getPropertyValue(row, this.GroupingKey);
-
-            return  !previousValue.Equals(currentValue);
-        }
-        object getPropertyValue(object obj, string propertyName)
-        {
-            //foreach (var prop in propertyName.Split('.').Select(s => obj.GetType().GetProperty(s)))
-            //    obj = prop.GetValue(obj, null);
-
-            foreach (string propName in propertyName.Split('.'))
-            {
-                obj = obj.GetType().GetProperty(propName).GetValue(obj, null);
-            }
-            return obj;
+            return previousRow == null || !previousRow.GetType().GetProperty(this.GroupingKey).GetValue(previousRow).Equals(row.GetType().GetProperty(this.GroupingKey).GetValue(row));
         }
 
         public string GroupingKey { get; set; }
