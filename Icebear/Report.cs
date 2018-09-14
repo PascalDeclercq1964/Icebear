@@ -133,7 +133,7 @@ namespace IceBear
 
         internal GenericReport genericReport;
 
-        const double fontSizeToHeight = 1; //1.25f;
+        const double fontSizeToHeight = 1.25; //1.25f;
 
         public void GeneratePDF(string FileName, bool OpenWhenDone = true)
         {
@@ -296,8 +296,11 @@ namespace IceBear
                 double growthForDetailSection;
                 DetailSection.Render2(row, xOffset, DefaultStyle, out renderedItems, out growthForDetailSection);
 
-                if (IsPageBreakNeeded(DetailSection.Height+ growthForDetailSection))
+                if (IsPageBreakNeeded(DetailSection.Height + growthForDetailSection))
+                {
                     NewPage(previousRow, row);
+                    DetailSection.Render2(row, xOffset, DefaultStyle, out renderedItems, out growthForDetailSection);   //rerender because suppressed repeating values need should not be suppressed at the beginning of a page
+                }
 
                 //Alternating detail color
                 if (AlternateColorOfDetailLines)
@@ -318,7 +321,8 @@ namespace IceBear
 
                 foreach (ReportGroup reportGroup in ReportGroups)
                 {
-                    reportGroup.FooterSection.calculateAggregates(row);
+                    if (reportGroup.FooterSection!=null)
+                        reportGroup.FooterSection.calculateAggregates(row);
                     reportGroup.previousRow = row;
                 }
                 previousRow = row;
@@ -443,6 +447,14 @@ namespace IceBear
                     genericReport.CurrentPage.reportItems.Add(new reportItem() { reportObjectType = reportObjectTypes.Line, X = LeftMargin, Y = i, W = PrintableAreaWidth, H = 0, pen = gridPen });
                 }
             }
+
+            foreach (var item in this.DetailSection.ReportObjects)
+            {
+                if (item is ReportObjectField)
+                {
+                    ((ReportObjectField)item).previousValue = null;
+                }
+            }
         }
 
         void Footers(object previousRow, object row)
@@ -455,16 +467,19 @@ namespace IceBear
                 if (reportGroup.previousRow != null && (row == null || reportGroup.GroupingHasChanged(row)))
                 {
                     Debug.WriteLine(yOffset);
-                    if (IsPageBreakNeeded(reportGroup.FooterSection.Height))
-                        NewPage(previousRow, row);
 
-                    double growth;
-                    List<reportItem> renderedItems;
-                    reportGroup.FooterSection.Render2(reportGroup.previousRow, xOffset, DefaultStyle, out renderedItems, out growth);
-                    genericReport.AddReportItems(renderedItems, yOffset);
-                    
-                    yOffset += reportGroup.FooterSection.Height+growth;
+                    if (reportGroup.FooterSection != null)
+                    {
+                        if (IsPageBreakNeeded(reportGroup.FooterSection.Height))
+                            NewPage(previousRow, row);
 
+                        double growth;
+                        List<reportItem> renderedItems;
+                        reportGroup.FooterSection.Render2(reportGroup.previousRow, xOffset, DefaultStyle, out renderedItems, out growth);
+                        genericReport.AddReportItems(renderedItems, yOffset);
+
+                        yOffset += reportGroup.FooterSection.Height + growth;
+                    }
                 }
             }
         }
@@ -896,7 +911,7 @@ namespace IceBear
         /// </summary>
         public ReportObjectField SuppressRepeatingValuesChild { get; set; }
 
-        string previousValue;
+        internal string previousValue;
 
         public void Render2(object row, double XOffset, double YOffset, Style DefaultStyle, out List<reportItem> RenderedItems, out double Growth, Dictionary<string, double> aggregatedValues = null)
         {
