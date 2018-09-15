@@ -17,17 +17,13 @@ namespace IceBear
     /*
      Todo's
 
-        - reportFooter : allow to suppress pageheader
-
+        - [improvement] reportFooter : allow to suppress pageheader
+        - [improvement] default detail height is not oke
         - [feature] implement Barcodes
         - [feature] implement output to stream
         - [feature] trap & log errors
-
         - [feature] implement collection fields such as DataTable rows
-        - [feature] ReportHeader
-        - [feature] ReportFooter with force to new page
         - [feature] group header: repeat on each page
-        - [feature] pagefooter: force to bottom of the page
         - [feature] conditional formatting
         - [feature] print in columns
         - [feature] Crosstab
@@ -42,7 +38,13 @@ namespace IceBear
         - Subreport:
             - done [feature] keep together
             - Done [bug] respect page break
-
+        - [feature] pagefooter: force to bottom of the page
+		- bug: groupkey: also use cascading get property method
+        - [feature] suppress repeating values
+        - [feature] ReportHeader
+        - [feature] ReportFooter with force to new page
+		- [bug] check if a section is defined (not null) before using it (ex footsection)
+        - [improvement] suppress repeating values use of compound key instead of single values
      */
     public class Report
     {
@@ -118,7 +120,7 @@ namespace IceBear
         public double PrintableAreaLength { get { return PageLength - TopMargin - BottomMargin; } }
 
         public double YTopForAutoAddedFieldsInHeader { get; set; }
-        public bool ForcePageFooterToBottom { get; set; }
+
         double DefaultHeaderHeight = 30;
         double DefaultDetailHeight = Style.Default.Font.SizeInPoints*fontSizeToHeight;
 
@@ -131,7 +133,7 @@ namespace IceBear
 
         internal GenericReport genericReport;
 
-        const double fontSizeToHeight = 1.35f;
+        const double fontSizeToHeight = 1.25; //1.25f;
 
         public void GeneratePDF(string FileName, bool OpenWhenDone = true)
         {
@@ -279,13 +281,14 @@ namespace IceBear
                         double growthForThisSection;
                         reportGroup.HeaderSection.Render2(row, xOffset, DefaultStyle, out renderedItems, out growthForThisSection);
 
-                        if ((reportGroup.StartOnNewPage && yOffset>TopMargin+(PageHeader!=null ? PageHeader.Height : 0) ) || IsPageBreakNeeded(reportGroup.HeaderSection.Height+growthForThisSection))
+                        if (previousRow!=null && (reportGroup.StartOnNewPage && yOffset>TopMargin ) || IsPageBreakNeeded(reportGroup.HeaderSection.Height+growthForThisSection))
                             NewPage(previousRow, row);
 
                         genericReport.AddReportItems(renderedItems, yOffset);
 
                         yOffset += reportGroup.HeaderSection.Height+growthForThisSection;
-                        reportGroup.FooterSection.aggregatedValues = null;
+						if (reportGroup.FooterSection!=null)
+                        	reportGroup.FooterSection.aggregatedValues = null;
 
                     }
                 }
@@ -293,8 +296,11 @@ namespace IceBear
                 double growthForDetailSection;
                 DetailSection.Render2(row, xOffset, DefaultStyle, out renderedItems, out growthForDetailSection);
 
-                if (IsPageBreakNeeded(DetailSection.Height+ growthForDetailSection))
+                if (IsPageBreakNeeded(DetailSection.Height + growthForDetailSection))
+                {
                     NewPage(previousRow, row);
+                    DetailSection.Render2(row, xOffset, DefaultStyle, out renderedItems, out growthForDetailSection);   //rerender because suppressed repeating values need should not be suppressed at the beginning of a page
+                }
 
                 //Alternating detail color
                 if (AlternateColorOfDetailLines)
@@ -317,12 +323,14 @@ namespace IceBear
 
                 foreach (ReportGroup reportGroup in ReportGroups)
                 {
-                    reportGroup.FooterSection.calculateAggregates(row);
+                    if (reportGroup.FooterSection!=null)
+                        reportGroup.FooterSection.calculateAggregates(row);
                     reportGroup.previousRow = row;
                 }
                 previousRow = row;
 
             }
+
             if (previousRow != null)
             {
                 Footers(previousRow, null);
@@ -354,8 +362,8 @@ namespace IceBear
                         pagenumber++;
                     }
 
-                    if (ForcePageFooterToBottom)
-                        yOffset = PageLength - (PageFooter.Height + pageFooterGrowth) - BottomMargin;
+                    if (ForcePageFooterToPageBottom)
+                        yOffset = PageLength - PageFooter.Height - BottomMargin - pageFooterGrowth;
 
                     genericReport.AddReportItems(renderedItems, yOffset);
                     yOffset += PageFooter.Height+pageFooterGrowth;
@@ -391,8 +399,13 @@ namespace IceBear
 
             if (previousRow != null && PageFooter != null)
             {
+
                 PageFooter.Render2(previousRow, xOffset, DefaultStyle, out renderedItems, out growth);
-                genericReport.AddReportItems(renderedItems, PageLength - PageFooter.Height - BottomMargin);
+
+                if (ForcePageFooterToPageBottom)
+                    yOffset = PageLength - PageFooter.Height - BottomMargin - growth;
+
+                genericReport.AddReportItems(renderedItems, yOffset);
             }
 
             genericReport.NewPage();
@@ -437,6 +450,14 @@ namespace IceBear
                     genericReport.CurrentPage.reportItems.Add(new reportItem() { reportObjectType = reportObjectTypes.Line, X = LeftMargin, Y = i, W = PrintableAreaWidth, H = 0, pen = gridPen });
                 }
             }
+
+            foreach (var item in this.DetailSection.ReportObjects)
+            {
+                if (item is ReportObjectField)
+                {
+                    ((ReportObjectField)item).previousValue = null;
+                }
+            }
         }
 
         void Footers(object previousRow, object row)
@@ -449,16 +470,19 @@ namespace IceBear
                 if (reportGroup.previousRow != null && (row == null || reportGroup.GroupingHasChanged(row)))
                 {
                     Debug.WriteLine(yOffset);
-                    if (IsPageBreakNeeded(reportGroup.FooterSection.Height))
-                        NewPage(previousRow, row);
 
-                    double growth;
-                    List<reportItem> renderedItems;
-                    reportGroup.FooterSection.Render2(reportGroup.previousRow, xOffset, DefaultStyle, out renderedItems, out growth);
-                    genericReport.AddReportItems(renderedItems, yOffset);
-                    
-                    yOffset += reportGroup.FooterSection.Height+growth;
+                    if (reportGroup.FooterSection != null)
+                    {
+                        if (IsPageBreakNeeded(reportGroup.FooterSection.Height))
+                            NewPage(previousRow, row);
 
+                        double growth;
+                        List<reportItem> renderedItems;
+                        reportGroup.FooterSection.Render2(reportGroup.previousRow, xOffset, DefaultStyle, out renderedItems, out growth);
+                        genericReport.AddReportItems(renderedItems, yOffset);
+
+                        yOffset += reportGroup.FooterSection.Height + growth;
+                    }
                 }
             }
         }
@@ -476,7 +500,7 @@ namespace IceBear
         //    this.DetailSection.ReportObjects.Add(field);
         //}
 
-        public void AddField(string FieldName, double Width, double? X=null, double? Y=null, double? Height=null, string HeaderLabel = null, Alignment Alignment = Alignment.Left, string Mask = null, string ID = null, bool CanGrow=true)
+        public ReportObjectField AddField(string FieldName, double Width, double? X=null, double? Y=null, double? Height=null, string HeaderLabel = null, Alignment Alignment = Alignment.Left, string Mask = null, string ID = null, bool CanGrow=true, bool SuppressRepeatingValues=false)
         {
             if (Y.HasValue)
                 xNextPosition = 0;
@@ -496,9 +520,14 @@ namespace IceBear
 
                 this.SectionForAutoHeaderLabels.ReportObjects.Add(new ReportObjectLabel(HeaderLabel, X.Value, YTopForAutoAddedFieldsInHeader, Width: Width, Heigth:Height, Alignment: Alignment));
             }
-            this.DetailSection.ReportObjects.Add(new ReportObjectField() { FieldName = FieldName, XLeft = X.Value, XRight = X.Value + Width, YTop = 0, YBottom = Height.Value, Alignment = Alignment, Mask = Mask, ID = ID, CanGrow=CanGrow });
 
-            xNextPosition = X.Value + Width + 3;
+
+            ReportObjectField reportObjectField = new ReportObjectField() { FieldName = FieldName, XLeft = X.Value, XRight = X.Value + Width, YTop = 0, YBottom = Height.Value, Alignment = Alignment, Mask = Mask, ID = ID, CanGrow = CanGrow, SuppressRepeatingValues = SuppressRepeatingValues };
+            this.DetailSection.ReportObjects.Add(reportObjectField);
+
+            xNextPosition += Width + 3;
+
+            return reportObjectField;
         }
 
         private void GetPageSize()
@@ -886,18 +915,15 @@ namespace IceBear
         public string Mask { get; set; }
         public string ID { get; set; }
         public bool CanGrow { get; set; }
+        public bool SuppressRepeatingValues { get; set; }
+        /// <summary>
+        /// When SuppressRepeatingValues is used, SuppressRepeatingValuesChild can be used to reset the supression of a repeating value of that child field
+        /// Example: Given a report with fields "Name" & "Date", both with SuppressRepeatingValues=true. If "Name" changes, we want the "Date" repeated even when it is the same value of the previous line.
+        /// Assign the "Date" field to the SuppressRepeatingValuesChild of "Name".
+        /// </summary>
+        public ReportObjectField SuppressRepeatingValuesChild { get; set; }
 
-        object getPropertyValue(object obj, string propertyName)
-        {
-            //foreach (var prop in propertyName.Split('.').Select(s => obj.GetType().GetProperty(s)))
-            //    obj = prop.GetValue(obj, null);
-
-            foreach (string propName in propertyName.Split('.'))
-            {
-                obj = obj.GetType().GetProperty(propName).GetValue(obj, null); 
-            }
-            return obj;
-        }
+        internal string previousValue;
 
         public void Render2(object row, double XOffset, double YOffset, Style DefaultStyle, out List<reportItem> RenderedItems, out double Growth, Dictionary<string, double> aggregatedValues = null)
         {
@@ -911,11 +937,24 @@ namespace IceBear
             }
             else
             {
-                if (Mask == null)
-                    valueToRender = getPropertyValue(row, FieldName).ToString().Trim(); //row.GetType().GetProperty(FieldName).GetValue(row).ToString().Trim();
+                object value = Utility.getPropertyValue(row, FieldName);
+                if (value != null)
+                {
+                    if (Mask == null)
+                        valueToRender = Utility.getPropertyValue(row, FieldName).ToString().Trim(); //row.GetType().GetProperty(FieldName).GetValue(row).ToString().Trim();
+                    else
+                        valueToRender = string.Format("{0:" + Mask + "}", Utility.getPropertyValue(row, FieldName)); // row.GetType().GetProperty(FieldName).GetValue(row));
+                }
                 else
-                    valueToRender = string.Format("{0:" + Mask + "}", getPropertyValue(row, FieldName)); // row.GetType().GetProperty(FieldName).GetValue(row));
+                    valueToRender = "";
             }
+
+            if (SuppressRepeatingValues && previousValue == valueToRender)
+                return;
+
+
+            if (SuppressRepeatingValuesChild != null)
+                SuppressRepeatingValuesChild.previousValue = null;
 
             Style usedStyle = Style ?? DefaultStyle;
             double yBottomUsed = YBottom != -1 ? YBottom : YTop + usedStyle.Font.SizeInPoints;
@@ -946,6 +985,8 @@ namespace IceBear
 
 
             RenderedItems.Add(new reportItem() { reportObjectType = reportObjectTypes.String, text = valueToRender, style = usedStyle, X = XOffset + XLeft, Y = YOffset + YTop, W = XRight - XLeft, H = yBottomUsed - YTop, alignment = Alignment });
+
+            previousValue = valueToRender;
         }
     }
 
@@ -960,7 +1001,7 @@ namespace IceBear
         {
             this.Text = Text;
             this.XLeft = XLeft;
-            this.XRight = XRight ?? XLeft+(Width??10);
+            this.XRight = XRight ?? XLeft+(Width??100);
             this.YTop = YTop;
             this.YBottom = YBottom ?? (Heigth !=null ? YTop+Heigth.Value : -1); // cannot be null => -1 : which means not specified, will be set at render time
             this.Alignment = Alignment ?? IceBear.Alignment.Left;
@@ -1177,7 +1218,13 @@ namespace IceBear
         }
         internal Boolean GroupingHasChanged(object row)
         {
-            return previousRow == null || !previousRow.GetType().GetProperty(this.GroupingKey).GetValue(previousRow).Equals(row.GetType().GetProperty(this.GroupingKey).GetValue(row));
+            if (previousRow == null)
+                return true;
+
+            object previousValue = Utility.getPropertyValue(previousRow, this.GroupingKey);
+            object currentValue = Utility.getPropertyValue(row, this.GroupingKey);
+
+            return  !previousValue.Equals(currentValue);
         }
 
         public string GroupingKey { get; set; }
@@ -1259,5 +1306,20 @@ namespace IceBear
         internal Style style { get; set; }
         internal Alignment alignment { get; set; }
         internal Image image { get; set; }
+    }
+
+    internal class Utility
+    {
+        public static object getPropertyValue(object obj, string propertyName)
+        {
+            foreach (string propName in propertyName.Split('.'))
+            {
+                if (obj == null)
+                    break;
+
+                obj = obj.GetType().GetProperty(propName).GetValue(obj, null);
+            }
+            return obj;
+        }
     }
 }
