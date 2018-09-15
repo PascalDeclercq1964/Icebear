@@ -189,24 +189,24 @@ namespace IcebearDemo
             report.AddField("Address", 200, HeaderLabel:"Address");
             report.AddField("City", 200, HeaderLabel:"City");
 
-            report.ReportHeader = new ReportSection()
-            {
-                Height = 100,
-                ReportObjects =
-               {
-                   new ReportObjectLabel("Report header",0, 1, Width:150)
-               },
-                ForceNewPage=ReportSection.ForceNewPageTypes.AfterSection
-            };
-            report.ReportFooter = new ReportSection()
-            {
-                Height = 100,
-                ReportObjects =
-               {
-                   new ReportObjectLabel("Report footer",0, 1, Width:150)
-               },
-                ForceNewPage=ReportSection.ForceNewPageTypes.BeforeSection
-            };
+            //report.ReportHeader = new ReportSection()
+            //{
+            //    Height = 100,
+            //    ReportObjects =
+            //   {
+            //       new ReportObjectLabel("Report header",0, 1, Width:150)
+            //   },
+            //    ForceNewPage=ReportSection.ForceNewPageTypes.AfterSection
+            //};
+            //report.ReportFooter = new ReportSection()
+            //{
+            //    Height = 100,
+            //    ReportObjects =
+            //   {
+            //       new ReportObjectLabel("Report footer",0, 1, Width:150)
+            //   },
+            //    ForceNewPage=ReportSection.ForceNewPageTypes.BeforeSection
+            //};
 
         }
         void CustomerListPerCountry()
@@ -214,19 +214,25 @@ namespace IcebearDemo
             report = NewReport("Customer list by country");
             report.DataSource = customers.OrderBy(c => c.Country);
            
-            report.AddField("Id", 50, X:5, HeaderLabel: "ID");
+            report.AddField("Id", 50, X:25, HeaderLabel: "ID");
             report.AddField("CompanyName", 100, HeaderLabel: "Name");
             report.AddField("Address", 100, HeaderLabel: "Address");
             report.AddField("City", 100, HeaderLabel: "City");
 
+            Style groupStyle = Style.Default;
+            groupStyle.Font = new Font(report.DefaultStyle.Font.Name, 13, FontStyle.Bold);
+
             report.ReportGroups.Add(new ReportGroup()
             {
                 GroupingKey = "Country",
+                StartOnNewPage=true,
                 HeaderSection = new ReportSection()
                 {
-                    Height = 18,
+                    Height = 20,
+                    DefaultStyle=groupStyle,
                     ReportObjects = {
-                        new ReportObjectRectangle(){XLeft=0, XRight=report.PrintableAreaWidth, YTop=0, YBottom=14},
+                        //new ReportObjectRectangle(){XLeft=0, XRight=report.PrintableAreaWidth, YTop=0, YBottom=14},
+                        new ReportObjectLine(){XLeft=0, XRight=report.PrintableAreaWidth, YTop=17, YBottom=17},
                         new ReportObjectField("Country", 3, 0, Width:100)
                     }
                 },
@@ -369,8 +375,8 @@ namespace IcebearDemo
                 ID = "PageHeader",
                 DefaultStyle = headerStyle,
                 ReportObjects = {
-                    new ReportObjectLabel(Title, 400, 3, XRight:report.PrintableAreaWidth, Alignment:Alignment.Right){Style=titleStyle },
-                    new ReportObjectRectangle(){XLeft=0, XRight=report.PrintableAreaWidth, YTop=26, YBottom=46 },
+                    new ReportObjectLabel(Title, 250, 3, XRight:report.PrintableAreaWidth, Alignment:Alignment.Right){Style=titleStyle },
+                    new ReportObjectRectangle(){XLeft=0, XRight=report.PrintableAreaWidth, YTop=26, YBottom=46, Brush=b, Pen=p },
                     new ReportObjectImage(){ImageFileName=@"C:\Users\Pascal\Pictures\Icebear reporting company logo.png", XLeft=0, YTop=0, YBottom=25}
                 }
             };
@@ -389,8 +395,8 @@ namespace IcebearDemo
                 }
             };
 
-            report.AlternatingRowsPrimaryColor = Color.White;
-            report.AlternatingRowsSecondaryColor = Color.LightGray;
+            //report.AlternatingRowsPrimaryColor = Color.White;
+            //report.AlternatingRowsSecondaryColor = Color.LightGray;
             report.AlternateColorOfDetailLines = true;
             return report;
         }

@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Icebear", "Icebear\Icebear.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IcebearDemo", "IcebearDemo\IcebearDemo.csproj", "{83A69160-A7DB-4B97-B884-68848B1CFE72}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Icebear Showcase", "Icebear Showcase\Icebear Showcase.csproj", "{18E18BA1-DE3A-4595-B71D-9EDFB9C912F7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{83A69160-A7DB-4B97-B884-68848B1CFE72}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{83A69160-A7DB-4B97-B884-68848B1CFE72}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{83A69160-A7DB-4B97-B884-68848B1CFE72}.Release|Any CPU.Build.0 = Release|Any CPU
+		{18E18BA1-DE3A-4595-B71D-9EDFB9C912F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18E18BA1-DE3A-4595-B71D-9EDFB9C912F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18E18BA1-DE3A-4595-B71D-9EDFB9C912F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18E18BA1-DE3A-4595-B71D-9EDFB9C912F7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

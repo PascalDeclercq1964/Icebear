@@ -58,8 +58,8 @@ namespace IceBear
             this.SelectedOrientation = Orientation;
             DefaultStyle = Style.Default;
             AlternatingRowsPrimaryColor = Color.White;
-            AlternatingRowsSecondaryColor = Color.LightGray;
-
+            AlternatingRowsSecondaryColor = Color.GhostWhite;
+            ForcePageFooterToBottom = true;
         }
 
         PageSizes _pageType;
@@ -118,7 +118,7 @@ namespace IceBear
         public double PrintableAreaLength { get { return PageLength - TopMargin - BottomMargin; } }
 
         public double YTopForAutoAddedFieldsInHeader { get; set; }
-
+        public bool ForcePageFooterToBottom { get; set; }
         double DefaultHeaderHeight = 30;
         double DefaultDetailHeight = Style.Default.Font.SizeInPoints*fontSizeToHeight;
 
@@ -279,7 +279,7 @@ namespace IceBear
                         double growthForThisSection;
                         reportGroup.HeaderSection.Render2(row, xOffset, DefaultStyle, out renderedItems, out growthForThisSection);
 
-                        if ((reportGroup.StartOnNewPage && yOffset>TopMargin ) || IsPageBreakNeeded(reportGroup.HeaderSection.Height+growthForThisSection))
+                        if ((reportGroup.StartOnNewPage && yOffset>TopMargin+(PageHeader!=null ? PageHeader.Height : 0) ) || IsPageBreakNeeded(reportGroup.HeaderSection.Height+growthForThisSection))
                             NewPage(previousRow, row);
 
                         genericReport.AddReportItems(renderedItems, yOffset);
@@ -312,6 +312,8 @@ namespace IceBear
 
                 if (PageFooter != null)
                     PageFooter.calculateAggregates(row);
+                if (ReportFooter != null)
+                    ReportFooter.calculateAggregates(row);
 
                 foreach (ReportGroup reportGroup in ReportGroups)
                 {
@@ -324,6 +326,21 @@ namespace IceBear
             if (previousRow != null)
             {
                 Footers(previousRow, null);
+                if (ReportFooter != null)
+                {
+                    if (ReportFooter.ForceNewPage == ReportSection.ForceNewPageTypes.BeforeSection)
+                    {
+                        NewPage(previousRow, previousRow);
+                    }
+                    double growthReportFooter;
+                    ReportFooter.Render2(previousRow, xOffset, DefaultStyle, out renderedItems, out growthReportFooter);
+
+                    double y = PageLength - (ReportHeader != null ? ReportHeader.Height : 0) - growthReportFooter;
+                    genericReport.AddReportItems(renderedItems, yOffset);
+
+                    yOffset += ReportFooter.Height + growthReportFooter;
+                }
+
                 if (PageFooter != null)
                 {
                     double pageFooterGrowth;
@@ -336,24 +353,14 @@ namespace IceBear
                         yOffset = TopMargin;
                         pagenumber++;
                     }
+
+                    if (ForcePageFooterToBottom)
+                        yOffset = PageLength - (PageFooter.Height + pageFooterGrowth) - BottomMargin;
+
                     genericReport.AddReportItems(renderedItems, yOffset);
                     yOffset += PageFooter.Height+pageFooterGrowth;
                 }
 
-                if (ReportFooter != null)
-                {
-                    if (ReportFooter.ForceNewPage==ReportSection.ForceNewPageTypes.BeforeSection)
-                    {
-                        NewPage(previousRow, previousRow);
-                    }
-                    double growthReportFooter;
-                    ReportFooter.Render2(previousRow, xOffset, DefaultStyle, out renderedItems, out growthReportFooter);
-
-                    double y = PageLength - ReportHeader.Height-growthReportFooter;
-                    genericReport.AddReportItems(renderedItems, yOffset);
-
-                    yOffset += ReportFooter.Height+ growthReportFooter;
-                }
             }
 
 
@@ -491,7 +498,7 @@ namespace IceBear
             }
             this.DetailSection.ReportObjects.Add(new ReportObjectField() { FieldName = FieldName, XLeft = X.Value, XRight = X.Value + Width, YTop = 0, YBottom = Height.Value, Alignment = Alignment, Mask = Mask, ID = ID, CanGrow=CanGrow });
 
-            xNextPosition += Width + 3;
+            xNextPosition = X.Value + Width + 3;
         }
 
         private void GetPageSize()
@@ -644,6 +651,15 @@ namespace IceBear
         {
             doc.Save(FileName);
         }
+
+        public Stream GetStream(string FileName)
+        {
+            Stream stream = new MemoryStream();
+            doc.Save(stream, true);
+
+            return stream;
+        }
+
     }
 
     public class ReportSection
