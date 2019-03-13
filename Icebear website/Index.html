@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+
+<head></head>
+
+<body>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" type="text/css">
+  <link rel="stylesheet" href="https://v40.pingendo.com/assets/4.0.0/default/theme.css" type="text/css">
+  <nav class="navbar navbar-expand-md bg-secondary navbar-dark">
+    <div class="container">
+      <a class="navbar-brand" href="#">Icebear reporting for .net</a>
+      <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarSupportedContent">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="#features">Features</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="Documentation.html">Documentation</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Pricing</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">About</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-white" href="#">Contact us</a>
+          </li>
+        </ul>
+        <form class="form-inline m-0">
+          <input class="form-control mr-2" type="text" placeholder="Search">
+          <button class="btn btn-primary" type="submit">Search</button>
+        </form>
+      </div>
+    </div>
+  </nav>
+  <div class="py-5 text-center" style="background-image: url(&quot;https://pingendo.github.io/templates/sections/assets/cover_event.jpg&quot;);">
+    <div class="container py-5">
+      <div class="row">
+        <div class="col-md-12">
+          <h1 class="display-3 mb-4 text-primary">Icebear reporting for .net</h1>
+          <p class="lead mb-5"> Icebear reporting for .net is a reporting solution that allows to print reports or generate them as PDF.&nbsp;
+            <br>The reports are defined in code, there is no designer.&nbsp;
+            <br>No designer?? Well no, but give it a try! Be you will make your first report faster than with any other tool with designer. </p>
+          <a href="#" class="btn btn-lg mx-1 btn-secondary">Download</a>
+          <a href="#features" class="btn btn-lg btn-primary mx-1">Learn more</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="py-5">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12">
+          <h1 class="text-center display-3 text-primary">Getting started</h1>
+          <p class=""> This is an example of a very simple report:
+            <br> </p>
+          <pre>Report report = new Report();<br>report.DataSource = customers.OrderBy(c =&gt; c.CompanyName);<br>report.AddField("Id", 50, HeaderLabel:"ID");<br>report.AddField("CompanyName", 100, HeaderLabel:"Name");<br>report.AddField("Address", 100, HeaderLabel:"Address");<br>report.AddField("City", 100, HeaderLabel:"City");<br><br>report.GeneratePDF($"c:\\temp\\Report {DateTime.Now:yyyyMMddhhmmss}.pdf");
+            </pre>
+          <p> Not the fanciest report ever made, but it's a start! </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="py-5 bg-light">
+    <div class="container">
+      <div class="row text-center">
+        <div class="col-md-12">
+          <h1 class="mb-4 text-primary" id="features">Features</h1>
+          <div class="row text-left mt-5">
+            <div class="col-md-4 my-3">
+              <div class="row mb-3">
+                <div class="text-center col-2">
+                  <i class="d-block mx-auto fa fa-3x fa-mars"></i>
+                </div>
+                <div class="align-self-center col-10">
+                  <h5 class="text-secondary">
+                    <b>7 available sections</b>
+                  </h5>
+                </div>
+              </div>
+              <ul>
+                <li>reportheader</li>
+                <li>pageheader</li>
+                <li>groupHeader</li>
+                <li>detailsection</li>
+                <li>groupfooter</li>
+                <li>pagefooter</li>
+                <li>reportfooter</li>
+              </ul>
+            </div>
+            <div class="col-md-4 my-3">
+              <div class="row mb-3">
+                <div class="text-center col-2">
+                  <i class="d-block mx-auto fa fa-3x fa-venus"></i>
+                </div>
+                <div class="align-self-center col-10">
+                  <h5 class="text-secondary">
+                    <b>Output</b>
+                  </h5>
+                </div>
+              </div>
+              <ul>
+                <li>Generate PDF</li>
+                <li>To printer</li>
+              </ul>
+            </div>
+            <div class="col-md-4 my-3">
+              <div class="row mb-3">
+                <div class="text-center col-2">
+                  <i class="d-block mx-auto fa fa-3x fa-neuter"></i>
+                </div>
+                <div class="align-self-center col-10">
+                  <h5 class="text-secondary">
+                    <b>Grouping</b>
+                  </h5>
+                </div>
+              </div>
+              <p>Unlimited grouping with totals in the groupfooter section : Sum, Count, Min, Max, Average</p>
+            </div>
+            <div class="col-md-4 my-3">
+              <div class="row mb-3">
+                <div class="text-center col-2">
+                  <i class="d-block mx-auto fa fa-3x fa-mars-stroke"></i>
+                </div>
+                <div class="align-self-center col-10">
+                  <h5 class="text-secondary">
+                    <b>Subreports</b>
+                  </h5>
+                </div>
+              </div>
+              <p>More complex reports are made possible through the use of reports. An invoice for example</p>
+            </div>
+            <div class="col-md-4 my-3">
+              <div class="row mb-3">
+                <div class="text-center col-2">
+                  <i class="d-block mx-auto fa fa-3x fa-mars-double"></i>
+                </div>
+                <div class="align-self-center col-10">
+                  <h5 class="text-secondary">
+                    <b>Objects on a report</b>
+                  </h5>
+                </div>
+              </div>
+              <p>text, image, line, rectangle, subreport and barcode</p>
+            </div>
+            <div class="col-md-4 my-3">
+              <div class="row mb-3">
+                <div class="text-center col-2">
+                  <i class="d-block mx-auto fa fa-3x fa-genderless"></i>
+                </div>
+                <div class="align-self-center col-10">
+                  <h5 class="text-secondary">
+                    <b>Easy to make your reports uniform</b>
+                  </h5>
+                </div>
+              </div>
+              <p>Make a base layout and let your reports inherit from them. All your reports have an uniform but personalised design.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  <pingendo onclick="window.open('https://pingendo.com/', '_blank')" style="cursor:pointer;position: fixed;bottom: 10px;right:10px;padding:4px;background-color: #00b0eb;border-radius: 8px; width:250px;display:flex;flex-direction:row;align-items:center;justify-content:center;font-size:14px;color:white">Made with Pingendo Free&nbsp;&nbsp;
+    <img src="https://pingendo.com/site-assets/Pingendo_logo_big.png" class="d-block" alt="Pingendo logo" height="16">
+  </pingendo>
+</body>
+
+</html>
