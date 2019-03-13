@@ -61,7 +61,7 @@ namespace IceBear
             DefaultStyle = Style.Default;
             AlternatingRowsPrimaryColor = Color.White;
             AlternatingRowsSecondaryColor = Color.GhostWhite;
-            ForcePageFooterToBottom = true;
+            ForcePageFooterToPageBottom = true;
         }
 
         PageSizes _pageType;
@@ -120,6 +120,8 @@ namespace IceBear
         public double PrintableAreaLength { get { return PageLength - TopMargin - BottomMargin; } }
 
         public double YTopForAutoAddedFieldsInHeader { get; set; }
+
+        public bool ForcePageFooterToPageBottom { get; set; }
 
         double DefaultHeaderHeight = 30;
         double DefaultDetailHeight = Style.Default.Font.SizeInPoints*fontSizeToHeight;
@@ -1312,14 +1314,21 @@ namespace IceBear
     {
         public static object getPropertyValue(object obj, string propertyName)
         {
-            foreach (string propName in propertyName.Split('.'))
+            try
             {
-                if (obj == null)
-                    break;
+                foreach (string propName in propertyName.Split('.'))
+                {
+                    if (obj == null)
+                        break;
 
-                obj = obj.GetType().GetProperty(propName).GetValue(obj, null);
+                    obj = obj.GetType().GetProperty(propName).GetValue(obj, null);
+                }
+                return obj;
             }
-            return obj;
+            catch
+            {
+                return "";
+            }
         }
     }
 }
