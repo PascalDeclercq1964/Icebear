@@ -20,7 +20,7 @@ Features
 
 Give it a try. You'll be surprised how easy and fast it is to create a report in code. Even more complex ones such as an invoice.
 
-Check the wiki to [get started and documentation](https://github.com/PascalDeclercq1964/Icebear/wiki)
+FOr documentation check http://icebear.pascaldeclercq.be/Documentation.aspx
 
 IMPORTANT NOTE: Icebear reports is in a very early development faze. Please feel free to try and test it. We do not recommend to use it already in production.
 All comments are appreciated.
