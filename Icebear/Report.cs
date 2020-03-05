@@ -176,6 +176,15 @@ namespace IceBear
             printDocument.Print();
         }
 
+        public MemoryStream StreamPDF()
+        {
+            MemoryStream memoryStream = new MemoryStream();
+            this.generateGenericReport();
+            RenderToPDF renderToPdf = new RenderToPDF(this.SelectedPageType, this.SelectedOrientation);
+            this.renderTheReport((IRenderEngine)renderToPdf);
+            return renderToPdf.GetStream();
+        }
+
 
         int pageToPrint;
         private void PrintDocument_PrintPage(object sender, PrintPageEventArgs e)
@@ -683,12 +692,11 @@ namespace IceBear
             doc.Save(FileName);
         }
 
-        public Stream GetStream(string FileName)
+        public MemoryStream GetStream()
         {
-            Stream stream = new MemoryStream();
-            doc.Save(stream, true);
-
-            return stream;
+            MemoryStream memoryStream = new MemoryStream();
+            this.doc.Save((Stream)memoryStream, false);
+            return memoryStream;
         }
 
     }
